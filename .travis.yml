@@ -16,3 +16,5 @@ script:
   - go test -v -run TestELFRead
   - go test -v -run TestELFDumpROPGadgets
   - go test -v -run TestDisasm
+  - go test -v -run TestELFGetSignatureVAddrs
+  - go test -v -run TestELFGetOpcodeVAddrs
