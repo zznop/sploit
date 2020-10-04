@@ -74,6 +74,34 @@ func TestELFRead(t *testing.T) {
     t.Logf("Read %v bytes from vaddr:0x%08x:\n%s", readSize, addr, hex.Dump(data))
 }
 
+// TestELFGetSignatureVAddrs test searching for bytes in all segments
+func TestELFGetSignatureVAddrs(t *testing.T) {
+    t.Logf("Testing ELF binary signature search")
+    e, _ := NewELF(elfFile)
+    vaddrs, err := e.GetSignatureVAddrs([]byte("lolwut"))
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    if vaddrs[0] != 0x2004 {
+        t.Fatal("Signature vaddr != 0x2004")
+    }
+}
+
+// TestELFGetOpcodeVAddrs tests searching for bytes in executable segments
+func TestELFGetOpcodeVAddrs(t *testing.T) {
+    leaRDI := []byte{0x48, 0x8d, 0x3d, 0xb9, 0x0e, 0x00, 0x00}
+    e, _ := NewELF(elfFile)
+    vaddrs, err := e.GetOpcodeVAddrs(leaRDI)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    if vaddrs[0] != 0x1144 {
+        t.Fatal("Opcode vaddr != 0x1144")
+    }
+}
+
 // TestELFDumpROPGadgets tests ROP gadget dumping functionality
 func TestELFDumpROPGadgets(t *testing.T) {
     t.Logf("Testing ROP gadget dump (%s)...", elfFile)
