@@ -42,8 +42,8 @@ func TestNewELF(t *testing.T) {
     t.Log("Canary: " + strconv.FormatBool(e.Mitigations.Canary))
 }
 
-// TestBSS tests relative addressing in the BSS section
-func TestBSS(t *testing.T) {
+// TestELFBSS tests relative addressing in the BSS section
+func TestELFBSS(t *testing.T) {
     t.Logf("Testing .bss section addressing (%s)...", elfFile)
     e, _ := NewELF(elfFile)
     addr, err := e.BSS(4)
@@ -57,8 +57,8 @@ func TestBSS(t *testing.T) {
     t.Logf(".bss+4 == 0x%08x", addr)
 }
 
-// TestRead tests reading data from an ELF at a specified virtual address
-func TestRead(t *testing.T) {
+// TestELFRead tests reading data from an ELF at a specified virtual address
+func TestELFRead(t *testing.T) {
     t.Logf("Testing ELF vaddr reads (%s)...", elfFile)
     e, _ := NewELF(elfFile)
     readSize := uint64(6)
@@ -74,8 +74,8 @@ func TestRead(t *testing.T) {
     t.Logf("Read %v bytes from vaddr:0x%08x:\n%s", readSize, addr, hex.Dump(data))
 }
 
-// TestDumpROPGadgets tests ROP gadget dumping functionality
-func TestDumpROPGadgets(t *testing.T) {
+// TestELFDumpROPGadgets tests ROP gadget dumping functionality
+func TestELFDumpROPGadgets(t *testing.T) {
     t.Logf("Testing ROP gadget dump (%s)...", elfFile)
     e, _ := NewELF(elfFile)
     err := e.DumpROPGadgets()
