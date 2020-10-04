@@ -5,6 +5,7 @@ import (
     "debug/elf"
     "errors"
     "fmt"
+    "bytes"
 )
 
 // ELFType is a struct that represents the ELF type
@@ -79,7 +80,7 @@ func (e *ELF)BSS(offset uint64)(uint64, error) {
 
 // Read is a method for reading bytes from the specified virtual address of an ELF
 func (e *ELF)Read(address uint64, nBytes uint64)([]byte, error) {
-    s, err := getVaddrSegment(e.E, address)
+    s, err := getVASegment(e.E, address)
     if err != nil {
         return nil, err
     }
@@ -138,7 +139,50 @@ func (e *ELF)DumpROPGadgets() error {
     return nil
 }
 
-func getVaddrSegment(e *elf.File, address uint64)(*elf.Prog, error) {
+// GetSignatureVAddrs searches for the specified sequence of bytes in all segments
+func (e *ELF)GetSignatureVAddrs(signature []byte) ([]uint64, error) {
+    return e.getSignatureVAddrs(signature, false)
+}
+
+// GetOpcodeVAddrs searches for the specified sequence of bytes in executable segments
+func (e *ELF)GetOpcodeVAddrs(signature []byte) ([]uint64, error) {
+    return e.getSignatureVAddrs(signature, true)
+}
+
+func (e *ELF)getSignatureVAddrs(signature []byte, exeOnly bool) ([]uint64, error) {
+    file := e.E
+    vaddrs := []uint64{}
+    for i := 0; i < len(file.Progs); i++ {
+        if exeOnly {
+            if file.Progs[i].Flags & elf.PF_X == 0 {
+                continue
+            }
+        }
+
+        start := file.Progs[i].Vaddr
+        size := uint64(file.Progs[i].Filesz)
+        data, err := e.Read(start, size)
+        if err != nil {
+            return nil, errors.New("Failed to read from segment")
+        }
+
+        // Search for byte signature in segment
+        n := 0
+        for {
+            idx := bytes.Index(data[n:], signature)
+            if idx == -1 {
+                break
+            }
+
+            vaddrs = append(vaddrs, file.Progs[i].Vaddr+uint64(n)+uint64(idx))
+            n += idx + 1
+        }
+    }
+
+    return vaddrs, nil
+}
+
+func getVASegment(e *elf.File, address uint64)(*elf.Prog, error) {
     for i := 0; i < len(e.Progs); i++ {
         s := e.Progs[i]
         start := s.Vaddr
