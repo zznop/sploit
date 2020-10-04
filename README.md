@@ -1,4 +1,4 @@
-# sploit
+# sploit [![Build Status](https://travis-ci.org/zznop/sploit.svg?branch=master)](https://travis-ci.org/zznop/sploit)
 
 ## Description
 
