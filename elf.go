@@ -7,6 +7,7 @@ import (
     "fmt"
     "bytes"
     "encoding/binary"
+    "regexp"
 )
 
 // ELF is a struct that contains methods for operating on an ELF file
@@ -171,30 +172,38 @@ func (e *ELF)Disasm(address uint64, nBytes int)(string, error) {
 
 // DumpROPGadgets locates and prints ROP gadgets contained in the ELF file to stdout
 func (e *ELF)DumpROPGadgets() error {
-    file := e.E
-    for i := 0; i < len(file.Progs); i++ {
-        // Check if segment is executable
-        if file.Progs[i].Flags & elf.PF_X == 0 {
-            continue
-        }
+    gadgets, err := e.queryROPGadgets()
+    if err != nil {
+        return err
+    }
 
-        // Segment is executable, read segment data
-        data, err := e.Read(file.Progs[i].Vaddr, int(file.Progs[i].Filesz))
-        if err != nil {
-            return err
-        }
+    for _, gadget := range gadgets {
+        fmt.Printf("%08x: %v\n", gadget.Address, gadget.Instrs)
+    }
 
-        // Search for gadgets in data
-        gadgets, err := findGadgets(e.Processor, data, file.Progs[i].Vaddr)
-        if err != nil {
-            return err
-        }
+    return nil
+}
 
-        for _, gadget := range gadgets {
-            fmt.Printf("%08x: %v\n", gadget.Address, gadget.Instrs)
+// SearchROPGadgets returns a slice of pointers to Gadgets containing a sub-string match with the user-defined regex
+func (e *ELF)SearchROPGadgets(regex string)([]*Gadget, error) {
+    gadgets, err := e.queryROPGadgets()
+    if err != nil {
+        return nil, err
+    }
+
+    r, err := regexp.Compile(regex)
+    if err != nil {
+        return nil, err
+    }
+
+    matchGadgets := []*Gadget{}
+    for _, gadget := range gadgets {
+        if r.FindAllString(gadget.Instrs, 1) != nil {
+            matchGadgets = append(matchGadgets, gadget)
         }
     }
-    return nil
+
+    return matchGadgets, nil
 }
 
 // GetSignatureVAddrs searches for the specified sequence of bytes in all segments
@@ -322,3 +331,29 @@ func (e *ELF)readIntBytes(address uint64, width int)([]byte, error) {
     return b, nil
 }
 
+func (e *ELF)queryROPGadgets() ([]*Gadget, error) {
+    file := e.E
+    gadgets := []*Gadget{}
+    for i := 0; i < len(file.Progs); i++ {
+        // Check if segment is executable
+        if file.Progs[i].Flags & elf.PF_X == 0 {
+            continue
+        }
+
+        // Segment is executable, read segment data
+        data, err := e.Read(file.Progs[i].Vaddr, int(file.Progs[i].Filesz))
+        if err != nil {
+            return nil, err
+        }
+
+        // Search for gadgets in data
+        gadgetsSeg, err := findGadgets(e.Processor, data, file.Progs[i].Vaddr)
+        if err != nil {
+            return nil, err
+        }
+
+        gadgets = append(gadgets, gadgetsSeg...)
+    }
+
+    return gadgets, nil
+}
