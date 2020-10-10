@@ -6,6 +6,7 @@ import (
     "errors"
     "fmt"
     "bytes"
+    "encoding/binary"
 )
 
 // ELF is a struct that contains methods for operating on an ELF file
@@ -84,6 +85,76 @@ func (e *ELF)Read(address uint64, nBytes int)([]byte, error) {
     }
 
     return buf, nil
+}
+
+// Read8 reads 8 bits from the ELF at the specified address and returns the data as a uint8
+func (e *ELF)Read8(address uint64)(uint8, error) {
+    b, err := e.readIntBytes(address, 1)
+    if err != nil {
+        return 0, err
+    }
+
+    return b[0], nil
+}
+
+// Read16LE reads 16 bits from the ELF at the specified address and returns a Uint16 in little endian byte order
+func (e *ELF)Read16LE(address uint64)(uint16, error) {
+    b, err := e.readIntBytes(address, 2)
+    if err != nil {
+        return 0, err
+    }
+
+    return binary.LittleEndian.Uint16(b), nil
+}
+
+// Read16BE reads 16 bits from the ELF at the specified address and returns a Uint16 in big endian byte order
+func (e *ELF)Read16BE(address uint64)(uint16, error) {
+    b, err := e.readIntBytes(address, 2)
+    if err != nil {
+        return 0, err
+    }
+
+    return binary.BigEndian.Uint16(b), nil
+}
+
+// Read32LE reads 32 bits from the ELF at the specified address and returns a Uint32 in little endian byte order
+func (e *ELF)Read32LE(address uint64)(uint32, error) {
+    b, err := e.readIntBytes(address, 4)
+    if err != nil {
+        return 0, err
+    }
+
+    return binary.LittleEndian.Uint32(b), nil
+}
+
+// Read32BE reads 32 bits from the ELF at the specified address and returns a Uint32 in big endian byte order
+func (e *ELF)Read32BE(address uint64)(uint32, error) {
+    b, err := e.readIntBytes(address, 4)
+    if err != nil {
+        return 0, err
+    }
+
+    return binary.BigEndian.Uint32(b), nil
+}
+
+// Read64LE reads 64 bits from the ELF at the specified address and returns a Uint64 in little endian byte order
+func (e *ELF)Read64LE(address uint64)(uint64, error) {
+    b, err := e.readIntBytes(address, 8)
+    if err != nil {
+        return 0, err
+    }
+
+    return binary.LittleEndian.Uint64(b), nil
+}
+
+// Read64BE reads 64 bits from the ELF at the specified address and returns a Uint64 in big endian byte order
+func (e *ELF)Read64BE(address uint64)(uint64, error) {
+    b, err := e.readIntBytes(address, 8)
+    if err != nil {
+        return 0, err
+    }
+
+    return binary.BigEndian.Uint64(b), nil
 }
 
 // Disasm disassembles code at the specified virtual address and returns a string containing assembly instructions
@@ -235,3 +306,17 @@ func checkMitigations(e *elf.File) (*Mitigations, error) {
         NX: nx,
     }, nil
 }
+
+func (e *ELF)readIntBytes(address uint64, width int)([]byte, error) {
+    b, err := e.Read(address, width)
+    if err != nil {
+        return nil, err
+    }
+
+    if len(b) != width {
+        return nil, errors.New("Read truncated do to end of segment")
+    }
+
+    return b, nil
+}
+
