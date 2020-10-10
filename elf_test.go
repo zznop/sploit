@@ -111,3 +111,85 @@ func TestELFDumpROPGadgets(t *testing.T) {
         t.Fatal(err)
     }
 }
+
+// TestRead8 tests reading 8-bit integers from an ELF
+func TestRead8(t *testing.T) {
+    e, _ := NewELF(elfFile)
+    i8, err := e.Read16LE(0x2c4)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    if i8 != 0x04 {
+        t.Fatal("Uint8 != 0x04")
+    }
+}
+
+// TestRead16 tests reading 16-bit integers from an ELF
+func TestRead16(t *testing.T) {
+    t.Logf("Testing 16-bit integer reads (%s)...", elfFile)
+    e, _ := NewELF(elfFile)
+    i16, err := e.Read16LE(0x2c4)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    if i16 != 0x0004 {
+        t.Fatal("Little endian uint16 != 0x0004")
+    }
+
+    i16, err = e.Read16BE(0x2c4)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    if i16 != 0x0400 {
+        t.Fatal("Big endian uint16 != 0x0400")
+    }
+}
+
+// TestRead32 tests reading 32-bit integers from an ELF
+func TestRead32(t *testing.T) {
+    t.Logf("Testing 32-bit integer reads (%s)...", elfFile)
+    e, _ := NewELF(elfFile)
+    i32, err := e.Read32LE(0x2d0)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    if i32 != 0x00554e47 {
+        t.Fatal("Little endian uint32 != 0x00554e47")
+    }
+
+    i32, err = e.Read32BE(0x2d0)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    if i32 != 0x474e5500 {
+        t.Fatal("Big endian uint32 != 0x474e5500")
+    }
+}
+
+// TestRead64 tests reading 64-bit integers from an ELF
+func TestRead64(t *testing.T) {
+    t.Logf("Testing 64-bit integer reads (%s)...", elfFile)
+    e, _ := NewELF(elfFile)
+    i64, err := e.Read64LE(0x2f0)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    if i64 != 0x3e95a14400554e47 {
+        t.Fatal("Little endian uint64 != 0x3e95a14400554e47")
+    }
+
+    i64, err = e.Read64BE(0x2f0)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    if i64 != 0x474e550044a1953e {
+        t.Fatal("Big endian uint64 != 0x474e550044a1953e")
+    }
+}
