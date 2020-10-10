@@ -9,7 +9,7 @@ import (
 func TestDisasm(t *testing.T) {
     t.Logf("Testing disassembly (%s)...", elfFile)
     addr := uint64(0x1135)
-    n := uint64(32)
+    n := 32
     e, _ := NewELF(elfFile)
     disasm, err := e.Disasm(addr, n)
     if err != nil {

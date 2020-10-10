@@ -8,19 +8,6 @@ import (
     "bytes"
 )
 
-// ELFType is a struct that represents the ELF type
-type ELFType struct {
-    ID int
-    Description string
-    PIE bool
-}
-
-// Mitigations is a struct that stores information on ELF mitigations
-type Mitigations struct {
-    Canary bool
-    NX bool
-}
-
 // ELF is a struct that contains methods for operating on an ELF file
 type ELF struct {
     E *elf.File
@@ -29,7 +16,7 @@ type ELF struct {
     Mitigations *Mitigations
 }
 
-// NewELF returns an initialized Elf structure
+// NewELF loads a ELF file from disk and initializes the ELF struct
 func NewELF(filename string) (*ELF, error) {
     e, err := elf.Open(filename)
     if err != nil {
@@ -64,7 +51,7 @@ func NewELF(filename string) (*ELF, error) {
     }, nil
 }
 
-// BSS returns the address of the BSS section plus the specified offset
+// BSS returns the virtual address of the specified offset into the .bss section
 func (e *ELF)BSS(offset uint64)(uint64, error) {
     section := e.E.Section(".bss")
     if section == nil {
@@ -78,16 +65,16 @@ func (e *ELF)BSS(offset uint64)(uint64, error) {
     return section.Addr+offset, nil
 }
 
-// Read is a method for reading bytes from the specified virtual address of an ELF
-func (e *ELF)Read(address uint64, nBytes uint64)([]byte, error) {
+// Read returns a slice of bytes read from the ELF at the specified virtual address
+func (e *ELF)Read(address uint64, nBytes int)([]byte, error) {
     s, err := getVASegment(e.E, address)
     if err != nil {
         return nil, err
     }
 
     offset := address - s.Vaddr
-    if s.Filesz - offset < nBytes {
-        nBytes = s.Filesz - offset
+    if s.Filesz - offset < uint64(nBytes) {
+        nBytes = int(s.Filesz - offset)
     }
 
     buf := make([]byte, nBytes)
@@ -99,8 +86,8 @@ func (e *ELF)Read(address uint64, nBytes uint64)([]byte, error) {
     return buf, nil
 }
 
-// Disasm returns a string of disassembled instructions
-func (e *ELF)Disasm(address uint64, nBytes uint64)(string, error) {
+// Disasm disassembles code at the specified virtual address and returns a string containing assembly instructions
+func (e *ELF)Disasm(address uint64, nBytes int)(string, error) {
     data, err := e.Read(address, nBytes)
     if err != nil {
         return "", err
@@ -111,7 +98,7 @@ func (e *ELF)Disasm(address uint64, nBytes uint64)(string, error) {
     return disasm(data, address, arch, mode, false)
 }
 
-// DumpROPGadgets computes and displays ROP gadgets
+// DumpROPGadgets locates and prints ROP gadgets contained in the ELF file to stdout
 func (e *ELF)DumpROPGadgets() error {
     file := e.E
     for i := 0; i < len(file.Progs); i++ {
@@ -121,9 +108,7 @@ func (e *ELF)DumpROPGadgets() error {
         }
 
         // Segment is executable, read segment data
-        start := file.Progs[i].Vaddr
-        size := uint64(file.Progs[i].Filesz)
-        data, err := e.Read(start, size)
+        data, err := e.Read(file.Progs[i].Vaddr, int(file.Progs[i].Filesz))
         if err != nil {
             return err
         }
@@ -144,7 +129,7 @@ func (e *ELF)GetSignatureVAddrs(signature []byte) ([]uint64, error) {
     return e.getSignatureVAddrs(signature, false)
 }
 
-// GetOpcodeVAddrs searches for the specified sequence of bytes in executable segments
+// GetOpcodeVAddrs searches for the specified sequence of bytes in executable segments only
 func (e *ELF)GetOpcodeVAddrs(signature []byte) ([]uint64, error) {
     return e.getSignatureVAddrs(signature, true)
 }
@@ -159,9 +144,7 @@ func (e *ELF)getSignatureVAddrs(signature []byte, exeOnly bool) ([]uint64, error
             }
         }
 
-        start := file.Progs[i].Vaddr
-        size := uint64(file.Progs[i].Filesz)
-        data, err := e.Read(start, size)
+        data, err := e.Read(file.Progs[i].Vaddr, int(file.Progs[i].Filesz))
         if err != nil {
             return nil, errors.New("Failed to read from segment")
         }
