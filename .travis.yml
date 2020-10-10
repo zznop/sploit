@@ -18,3 +18,7 @@ script:
   - go test -v -run TestDisasm
   - go test -v -run TestELFGetSignatureVAddrs
   - go test -v -run TestELFGetOpcodeVAddrs
+  - go test -v -run TestRead8
+  - go test -v -run TestRead16
+  - go test -v -run TestRead32
+  - go test -v -run TestRead64
