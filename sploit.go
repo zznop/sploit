@@ -56,3 +56,10 @@ func (e Endian) String() string {
         return fmt.Sprintf("%d", int(e))
     }
 }
+
+// Mitigations is used to store information on exploit mitigations detected while loading the binary
+type Mitigations struct {
+    Canary bool
+    NX bool
+}
+

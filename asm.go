@@ -14,6 +14,37 @@ var sourcePath = "/tmp/prog.S"
 var objectPath = "/tmp/prog.o"
 var blobPath = "/tmp/prog.bin"
 
+// Asm complies assembly instructions to a byte slice containing machine code
+func Asm(processor *Processor, code string) ([]byte, error) {
+    prefix, err := getToolchainPrefix(processor)
+    if err != nil {
+        return nil, err
+    }
+
+    err = createSourceFile(processor, code)
+    if err != nil {
+        return nil, err
+    }
+
+    err = buildProgram(processor, prefix)
+    if err != nil {
+        return nil, err
+    }
+
+    opcodes, err := dumpText(prefix)
+    os.Remove(sourcePath)
+    os.Remove(objectPath)
+    os.Remove(blobPath)
+    return opcodes, err
+}
+
+// Disasm disassembles a supplied byte slice and returns a string containing the assembly instructions
+func Disasm(address uint64, code []byte, processor *Processor) (string, error) {
+    arch := getCapstoneArch(processor)
+    mode := getCapstoneMode(processor)
+    return disasm(code, address, arch, mode, false)
+}
+
 func createSourceFile(processor *Processor, code string) error {
     srcCode := ".section .text\n.global _start\n"
     if processor.Architecture == ArchI386 || processor.Architecture == ArchX8664 || processor.Architecture == ArchIA64 {
@@ -117,30 +148,6 @@ func getToolchainPrefix(processor *Processor) (string, error) {
     }
 }
 
-// Asm is a method for compiling assembly code and returning a byte slice of opcode
-func Asm(processor *Processor, code string) ([]byte, error) {
-    prefix, err := getToolchainPrefix(processor)
-    if err != nil {
-        return nil, err
-    }
-
-    err = createSourceFile(processor, code)
-    if err != nil {
-        return nil, err
-    }
-
-    err = buildProgram(processor, prefix)
-    if err != nil {
-        return nil, err
-    }
-
-    opcodes, err := dumpText(prefix)
-    os.Remove(sourcePath)
-    os.Remove(objectPath)
-    os.Remove(blobPath)
-    return opcodes, err
-}
-
 func disasm(data []byte, address uint64, arch int, mode int, isROP bool)(string, error) {
     engine, err := gapstone.New(arch, mode)
     if err != nil {
@@ -208,15 +215,7 @@ func getCapstoneMode(processor *Processor) int {
     return mode
 }
 
-// Disasm disassembles a supplied byte array and formats instructions line-by-line
-func Disasm(address uint64, code []byte, processor *Processor) (string, error) {
-    arch := getCapstoneArch(processor)
-    mode := getCapstoneMode(processor)
-    return disasm(code, address, arch, mode, false)
-}
-
-// DisasmROP disassembles a supplied byte array and formats instructions on the same line
-func DisasmROP(address uint64, code []byte, processor *Processor) (string, error) {
+func disasmROP(address uint64, code []byte, processor *Processor) (string, error) {
     arch := getCapstoneArch(processor)
     mode := getCapstoneMode(processor)
     return disasm(code, address, arch, mode, true)

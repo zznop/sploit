@@ -61,9 +61,9 @@ func TestELFBSS(t *testing.T) {
 func TestELFRead(t *testing.T) {
     t.Logf("Testing ELF vaddr reads (%s)...", elfFile)
     e, _ := NewELF(elfFile)
-    readSize := uint64(6)
+    readSize := 6
     addr := uint64(0x2004)
-    data, err := e.Read(addr, readSize)
+    data, err := e.Read(addr, 6)
     if err != nil {
         t.Fatal(err)
     }
