@@ -15,10 +15,11 @@ script:
   - go test -v -run TestELFBSS
   - go test -v -run TestELFRead
   - go test -v -run TestELFDumpROPGadgets
-  - go test -v -run TestDisasm
+  - go test -v -run TestELFSearchROPGadgets
   - go test -v -run TestELFGetSignatureVAddrs
   - go test -v -run TestELFGetOpcodeVAddrs
   - go test -v -run TestRead8
   - go test -v -run TestRead16
   - go test -v -run TestRead32
   - go test -v -run TestRead64
+  - go test -v -run TestDisasm
