@@ -13,7 +13,7 @@ func disasmInstrsFromRet(processor *Processor, data []byte, index int, address u
 
     allGadgets := ""
     for i := index-1; i > stop; i-- {
-        gadget, _ := DisasmROP(address+uint64(i), data[i:index+1], processor)
+        gadget, _ := disasmROP(address+uint64(i), data[i:index+1], processor)
         if strings.Contains(gadget, "leave") ||
             !strings.HasSuffix(strings.TrimSpace(gadget), "ret") ||
             strings.Count(gadget, "ret") > 1 {
