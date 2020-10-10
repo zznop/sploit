@@ -190,7 +190,9 @@ func (e *ELF)DumpROPGadgets() error {
             return err
         }
 
-        fmt.Print(gadgets)
+        for _, gadget := range gadgets {
+            fmt.Printf("%08x: %v\n", gadget.Address, gadget.Instrs)
+        }
     }
     return nil
 }

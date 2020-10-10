@@ -161,7 +161,7 @@ func disasm(data []byte, address uint64, arch int, mode int, isROP bool)(string,
 
     insnsStr := ""
     if isROP {
-        insnsStr += fmt.Sprintf("%08x: ", address)
+        insnsStr += fmt.Sprintf("%08x:", address)
     }
 
     for i := 0; i < len(insns); i++ {
@@ -169,8 +169,6 @@ func disasm(data []byte, address uint64, arch int, mode int, isROP bool)(string,
             insnsStr += fmt.Sprintf("%s %s", insns[i].Mnemonic, insns[i].OpStr)
             if i+1 != len(insns) {
                 insnsStr += " ; "
-            } else {
-                insnsStr += "\n"
             }
         } else {
             insnsStr += fmt.Sprintf("%08x: %s %s\n", insns[i].Address, insns[i].Mnemonic, insns[i].OpStr)
@@ -215,7 +213,7 @@ func getCapstoneMode(processor *Processor) int {
     return mode
 }
 
-func disasmROP(address uint64, code []byte, processor *Processor) (string, error) {
+func disasmGadget(address uint64, code []byte, processor *Processor) (string, error) {
     arch := getCapstoneArch(processor)
     mode := getCapstoneMode(processor)
     return disasm(code, address, arch, mode, true)
