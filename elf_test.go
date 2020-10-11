@@ -102,16 +102,6 @@ func TestELFGetOpcodeVAddrs(t *testing.T) {
     }
 }
 
-// TestELFDumpROPGadgets tests ROP gadget dumping functionality
-func TestELFDumpROPGadgets(t *testing.T) {
-    t.Logf("Testing ROP gadget dump (%s)...", elfFile)
-    e, _ := NewELF(elfFile)
-    err := e.DumpROPGadgets()
-    if err != nil {
-        t.Fatal(err)
-    }
-}
-
 // TestRead8 tests reading 8-bit integers from an ELF
 func TestRead8(t *testing.T) {
     e, _ := NewELF(elfFile)
