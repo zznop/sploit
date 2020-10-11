@@ -4,12 +4,41 @@ import(
     "errors"
     "strings"
     "strconv"
+    "regexp"
+    "fmt"
 )
 
 // Gadget stores information about a ROP gadget such as the base address and instruction tokens
 type Gadget struct {
     Address uint64
     Instrs string
+}
+
+// ROP is a interface for working with ROP gadgets
+type ROP []*Gadget
+
+// Dump locates and prints ROP gadgets contained in the ELF file to stdout
+func (r *ROP)Dump() {
+    for _, gadget := range []*Gadget(*r) {
+        fmt.Printf("%08x: %v\n", gadget.Address, gadget.Instrs)
+    }
+}
+
+// InstrSearch returns ROP object containing ROP gadgets with a sub-string match to the user-defined regex
+func (r *ROP)InstrSearch(regex string)(ROP, error) {
+    re, err := regexp.Compile(regex)
+    if err != nil {
+        return nil, err
+    }
+
+    matchGadgets := ROP{}
+    for _, gadget := range []*Gadget(*r) {
+        if re.FindAllString(gadget.Instrs, 1) != nil {
+            matchGadgets = append(matchGadgets, gadget)
+        }
+    }
+
+    return matchGadgets, nil
 }
 
 func asmTokenToGadget(instr string)(*Gadget, error) {

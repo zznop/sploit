@@ -84,7 +84,7 @@ Disassembling 34 bytes at vaddr:00001135
 00001156: ret
 ```
 
-#### Example 3 - Dump/display ROP gadgets in a ELF executable
+#### Example 3 - Query ROP gadgets and display those with a sub-string match against "pop rbp"
 
 ```go
 package main;
@@ -97,18 +97,23 @@ var program = "../test/prog1.x86_64"
 
 func main() {
     elf, _ := sploit.NewELF(program)
-    elf.DumpROPGadgets()
+    rop, _ := elf.ROP()
+
+    matched, _ := rop.InstrSearch("pop rbp")
+    matched.Dump()
 }
 ```
 
 ```
-$ ./rop_dump_example
-00001013: add esp, 8 ; ret
-00001012: add rsp, 8 ; ret
-00001010: call rax ; add rsp, 8 ; ret
-0000100e: je 0x1012 ; call rax ; add rsp, 8 ; ret
-0000100d: sal byte ptr [rdx + rax - 1], 0xd0 ; add rsp, 8 ; ret
-0000100c: test eax, eax ; je 0x1012 ; call rax ; add rsp, 8 ; ret
+0000111f: pop rbp ; ret
+0000111d: add byte ptr [rcx], al ; pop rbp ; ret
+00001118: mov byte ptr [rip + 0x2f11], 1 ; pop rbp ; ret
+00001113: call 0x1080 ; mov byte ptr [rip + 0x2f11], 1 ; pop rbp ; ret
+000011b7: pop rbp ; pop r14 ; pop r15 ; ret
+000011b3: pop rbp ; pop r12 ; pop r13 ; pop r14 ; pop r15 ; ret
+000011b2: pop rbx ; pop rbp ; pop r12 ; pop r13 ; pop r14 ; pop r15 ; ret
+000011af: add esp, 8 ; pop rbx ; pop rbp ; pop r12 ; pop r13 ; pop r14 ; pop r15 ; ret
+000011ae: add rsp, 8 ; pop rbx ; pop rbp ; pop r12 ; pop r13 ; pop r14 ; pop r15 ; ret
 ...
 ```
 
