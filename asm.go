@@ -160,10 +160,6 @@ func disasm(data []byte, address uint64, arch int, mode int, isROP bool)(string,
     }
 
     insnsStr := ""
-    if isROP {
-        insnsStr += fmt.Sprintf("%08x:", address)
-    }
-
     for i := 0; i < len(insns); i++ {
         if isROP {
             insnsStr += fmt.Sprintf("%s %s", insns[i].Mnemonic, insns[i].OpStr)

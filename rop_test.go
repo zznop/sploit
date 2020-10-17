@@ -2,6 +2,7 @@ package sploit;
 
 import (
     "testing"
+    "bytes"
 )
 
 // TestELFDumpROPGadgets tests ROP gadget dumping functionality
@@ -36,5 +37,9 @@ func TestROPInstrSearch(t *testing.T) {
 
     if len(gadgets) != 1 || gadgets[0].Address != 0x11ae {
         t.Fatal("Single gadget search did not return gadget at 0x11ae")
+    }
+
+    if bytes.Compare(gadgets[0].Opcode, []byte{0x48, 0x83, 0xc4, 0x08, 0x5b, 0x5d, 0x41, 0x5c, 0x41, 0x5d, 0x41, 0x5e, 0x41, 0x5f, 0xc3}) != 0 {
+        t.Fatal("Gadget machine code does not match expected")
     }
 }

@@ -3,15 +3,15 @@ package sploit;
 import(
     "errors"
     "strings"
-    "strconv"
     "regexp"
     "fmt"
 )
 
-// Gadget stores information about a ROP gadget such as the base address and instruction tokens
+// Gadget stores information about a ROP gadgets including the address, instructions, and opcode bytes
 type Gadget struct {
     Address uint64
     Instrs string
+    Opcode []byte
 }
 
 // ROP is a interface for working with ROP gadgets
@@ -20,7 +20,7 @@ type ROP []*Gadget
 // Dump locates and prints ROP gadgets contained in the ELF file to stdout
 func (r *ROP)Dump() {
     for _, gadget := range []*Gadget(*r) {
-        fmt.Printf("%08x: %v\n", gadget.Address, gadget.Instrs)
+        fmt.Printf("0x%08x: %v\n", gadget.Address, gadget.Instrs)
     }
 }
 
@@ -41,19 +41,6 @@ func (r *ROP)InstrSearch(regex string)(ROP, error) {
     return matchGadgets, nil
 }
 
-func asmTokenToGadget(instr string)(*Gadget, error) {
-    parts := strings.SplitN(instr, ":", 2)
-    addr, err := strconv.ParseUint(parts[0], 16, 64)
-    if err != nil {
-        return nil, err
-    }
-
-    return &Gadget{
-        Address: addr,
-        Instrs : parts[1],
-    }, nil
-}
-
 func disasmInstrsFromRet(processor *Processor, data []byte, index int, address uint64) ([]*Gadget, error) {
     stop := index - 15
     if stop < 0 {
@@ -62,19 +49,25 @@ func disasmInstrsFromRet(processor *Processor, data []byte, index int, address u
 
     gadgets := []*Gadget{}
     for i := index-1; i > stop; i-- {
-        instr, _ := disasmGadget(address+uint64(i), data[i:index+1], processor)
+        instr, err := disasmGadget(address+uint64(i), data[i:index+1], processor)
+        if err != nil {
+            continue
+        }
+
         if strings.Contains(instr, "leave") ||
             !strings.HasSuffix(strings.TrimSpace(instr), "ret") ||
             strings.Count(instr, "ret") > 1 {
             continue
         }
 
-        // Get gadget type from capstone disassembly token
-        gadget, err := asmTokenToGadget(instr)
-        if err != nil {
-            return nil, err
-        }
-        gadgets = append(gadgets, gadget)
+        gadgets = append(
+            gadgets,
+            &Gadget {
+                Address: address+uint64(i),
+                Instrs: instr,
+                Opcode: data[i:index+1],
+            },
+        )
     }
 
     return gadgets, nil
