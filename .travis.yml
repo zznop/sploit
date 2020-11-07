@@ -23,3 +23,5 @@ script:
   - go test -v -run TestDisasm
   - go test -v -run TestROPDump
   - go test -v -run TestROPInstrSearch
+  - go test -v -run TestRecvLine
+  - go test -v -run TestRecvUntil
