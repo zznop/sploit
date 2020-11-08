@@ -49,7 +49,7 @@ func (r *Remote)Close() {
     }
 }
 
-// RecvUntil is a Remote method for receiving data until the specified sequence of bytes is detected
+// RecvUntil is a Remote method for receiving data over IP until the specified sequence of bytes is detected
 func (r *Remote)RecvUntil(needle []byte, drop bool)([]byte, error) {
     data := make([]byte, len(needle))
     b := bufio.NewReader(r.C)
@@ -71,9 +71,8 @@ func (r *Remote)RecvUntil(needle []byte, drop bool)([]byte, error) {
         if bytes.Compare(data[idx:idx+len(needle)], needle) == 0 {
             if drop == true {
                 return data[0:len(data)-len(needle)], nil
-            } else {
-                return data, nil
             }
+            return data, nil
         }
 
         byt, err := b.ReadByte()
@@ -86,7 +85,33 @@ func (r *Remote)RecvUntil(needle []byte, drop bool)([]byte, error) {
     }
 }
 
-// RecvLine is a Remote method for receiving data until a newline delimiter is detected
+// RecvLine is a Remote method for receiving data over IP until a newline delimiter is detected
 func (r *Remote)RecvLine()([]byte, error) {
     return r.RecvUntil([]byte("\n"), true)
+}
+
+// RecvN is a Remote method for receiving a specified number of bytes
+func (r *Remote)RecvN(n int)([]byte, error) {
+    b := make([]byte, n)
+    rn, err := r.C.Read(b)
+    if err != nil {
+        return nil, err
+    }
+
+    if rn != n {
+        return nil, errors.New("RecvN truncated")
+    }
+
+    return b, nil
+}
+
+// Send is a Remote method for sending data over IP
+func (r *Remote)Send(data []byte)(int, error) {
+    return r.C.Write(data)
+}
+
+// SendLine is a Remote method for sending data with a trailing newline character
+func (r *Remote)SendLine(line []byte)(int, error) {
+    line = append(line, '\n')
+    return r.C.Write(line)
 }

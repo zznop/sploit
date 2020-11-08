@@ -6,47 +6,10 @@ import(
     "testing"
 )
 
-// TestNewRemote tests Remote initialization
-func TestNewRemote(t *testing.T) {
-    // Start a goroutine with the client logic under test
-    go func() {
-        r, err := NewRemote("tcp", "127.0.0.1:8000")
-        if err != nil {
-            t.Fatal(err)
-        }
-        defer r.Close()
-
-        if r.Host != "127.0.0.1" {
-            t.Fatal("Host != localhost")
-        }
-
-        if r.Port != 8000 {
-            t.Fatal("Port != 8000")
-        }
-
-        if r.C == nil {
-            t.Fatal("Connection failed")
-        }
-    }()
-
-    // Start a listener server to handle incoming connection
-    l, err := net.Listen("tcp", ":8000")
-    if err != nil {
-        t.Fatal(err)
-    }
-    defer l.Close()
-
-    conn, err := l.Accept()
-    if err != nil {
-        return
-    }
-    defer conn.Close()
-    time.Sleep(1 * time.Second)
-}
-
 // TestRecvLine tests receiving a line of data from a TCP server
 func TestRecvLine(t *testing.T) {
     go func() {
+        time.Sleep(500 * time.Millisecond)
         r, err := NewRemote("tcp", "127.0.0.1:8000")
         if err != nil {
             t.Fatal(err)
@@ -75,13 +38,13 @@ func TestRecvLine(t *testing.T) {
     }
     defer conn.Close()
     conn.Write([]byte("lolwut\n"))
-    time.Sleep(1)
 }
 
 // TestRecvUntil tests receiving until a specified sequence of bytes
 func TestRecvUntil(t *testing.T) {
     go func() {
-        r, err := NewRemote("tcp", "127.0.0.1:8000")
+        time.Sleep(500 * time.Millisecond)
+        r, err := NewRemote("tcp", ":8000")
         if err != nil {
             t.Fatal(err)
         }
@@ -110,5 +73,93 @@ func TestRecvUntil(t *testing.T) {
     defer conn.Close()
     conn.Write([]byte("lolwut\n"))
     conn.Write([]byte("cmd>"))
-    time.Sleep(1)
+}
+
+// TestRecvN tests receiving a specified number of bytes
+func TestRecvN(t *testing.T) {
+    go func() {
+        time.Sleep(500 * time.Millisecond)
+        r, err := NewRemote("tcp", ":8000")
+        if err != nil {
+            t.Fatal(err)
+        }
+        defer r.Close()
+
+        data, err := r.RecvN(6)
+        if err != nil {
+            t.Fatal(err)
+        }
+
+        if string(data) != "lolwut" {
+            t.Fatal("RecvN data != lolwut")
+        }
+    }()
+
+    l, err := net.Listen("tcp", ":8000")
+    if err != nil {
+        t.Fatal(err)
+    }
+    defer l.Close()
+
+    conn, err := l.Accept()
+    if err != nil {
+        return
+    }
+    defer conn.Close()
+    conn.Write([]byte("lolwut"))
+}
+
+// TestSend tests sending data using Remote's Send and SendLine methods
+func TestSend(t *testing.T) {
+    go func() {
+        time.Sleep(500 * time.Millisecond)
+        r, err := NewRemote("tcp", ":8000")
+        if err != nil {
+            t.Fatal(err)
+        }
+        defer r.Close()
+
+        _, err = r.Send([]byte("Send test"))
+        if err != nil {
+            t.Fatal(err)
+        }
+
+        _, err = r.SendLine([]byte("SendLine test"))
+        if err != nil {
+            t.Fatal(err)
+        }
+    }()
+
+    l, err := net.Listen("tcp", ":8000")
+    if err != nil {
+        t.Fatal(err)
+    }
+    defer l.Close()
+
+    conn, err := l.Accept()
+    if err != nil {
+        return
+    }
+    defer conn.Close()
+
+
+    b := make([]byte, 9)
+    _, err = conn.Read(b)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    if string(b) != "Send test" {
+        t.Fatal("Send test data != expected")
+    }
+
+    b = make([]byte, 14)
+    _, err = conn.Read(b)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    if string(b) != "SendLine test\n" {
+        t.Fatal("SendLine test data != expected")
+    }
 }

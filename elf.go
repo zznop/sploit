@@ -51,7 +51,7 @@ func NewELF(filename string) (*ELF, error) {
     }, nil
 }
 
-// BSS returns the virtual address of the specified offset into the .bss section
+// BSS is an ELF method that returns the virtual address of the specified offset into the .bss section
 func (e *ELF)BSS(offset uint64)(uint64, error) {
     section := e.E.Section(".bss")
     if section == nil {
@@ -65,7 +65,7 @@ func (e *ELF)BSS(offset uint64)(uint64, error) {
     return section.Addr+offset, nil
 }
 
-// Read returns a slice of bytes read from the ELF at the specified virtual address
+// Read is an ELF method that returns a slice of bytes read from the ELF at the specified virtual address
 func (e *ELF)Read(address uint64, nBytes int)([]byte, error) {
     s, err := getVASegment(e.E, address)
     if err != nil {
@@ -86,7 +86,7 @@ func (e *ELF)Read(address uint64, nBytes int)([]byte, error) {
     return buf, nil
 }
 
-// Read8 reads 8 bits from the ELF at the specified address and returns the data as a uint8
+// Read8 is an ELF method that reads 8 bits from the ELF at the specified address and returns the data as a uint8
 func (e *ELF)Read8(address uint64)(uint8, error) {
     b, err := e.readIntBytes(address, 1)
     if err != nil {
@@ -96,7 +96,7 @@ func (e *ELF)Read8(address uint64)(uint8, error) {
     return b[0], nil
 }
 
-// Read16LE reads 16 bits from the ELF at the specified address and returns a Uint16 in little endian byte order
+// Read16LE is an ELF method that reads 16 bits from the ELF at the specified address and returns a Uint16 in little endian byte order
 func (e *ELF)Read16LE(address uint64)(uint16, error) {
     b, err := e.readIntBytes(address, 2)
     if err != nil {
@@ -106,7 +106,7 @@ func (e *ELF)Read16LE(address uint64)(uint16, error) {
     return binary.LittleEndian.Uint16(b), nil
 }
 
-// Read16BE reads 16 bits from the ELF at the specified address and returns a Uint16 in big endian byte order
+// Read16BE is an ELF method that reads 16 bits from the ELF at the specified address and returns a Uint16 in big endian byte order
 func (e *ELF)Read16BE(address uint64)(uint16, error) {
     b, err := e.readIntBytes(address, 2)
     if err != nil {
@@ -116,7 +116,7 @@ func (e *ELF)Read16BE(address uint64)(uint16, error) {
     return binary.BigEndian.Uint16(b), nil
 }
 
-// Read32LE reads 32 bits from the ELF at the specified address and returns a Uint32 in little endian byte order
+// Read32LE is an ELF method that reads 32 bits from the ELF at the specified address and returns a Uint32 in little endian byte order
 func (e *ELF)Read32LE(address uint64)(uint32, error) {
     b, err := e.readIntBytes(address, 4)
     if err != nil {
@@ -126,7 +126,7 @@ func (e *ELF)Read32LE(address uint64)(uint32, error) {
     return binary.LittleEndian.Uint32(b), nil
 }
 
-// Read32BE reads 32 bits from the ELF at the specified address and returns a Uint32 in big endian byte order
+// Read32BE is an ELF method that reads 32 bits from the ELF at the specified address and returns a Uint32 in big endian byte order
 func (e *ELF)Read32BE(address uint64)(uint32, error) {
     b, err := e.readIntBytes(address, 4)
     if err != nil {
@@ -136,7 +136,7 @@ func (e *ELF)Read32BE(address uint64)(uint32, error) {
     return binary.BigEndian.Uint32(b), nil
 }
 
-// Read64LE reads 64 bits from the ELF at the specified address and returns a Uint64 in little endian byte order
+// Read64LE is an ELF method that reads 64 bits from the ELF at the specified address and returns a Uint64 in little endian byte order
 func (e *ELF)Read64LE(address uint64)(uint64, error) {
     b, err := e.readIntBytes(address, 8)
     if err != nil {
@@ -146,7 +146,7 @@ func (e *ELF)Read64LE(address uint64)(uint64, error) {
     return binary.LittleEndian.Uint64(b), nil
 }
 
-// Read64BE reads 64 bits from the ELF at the specified address and returns a Uint64 in big endian byte order
+// Read64BE is an ELF method that reads 64 bits from the ELF at the specified address and returns a Uint64 in big endian byte order
 func (e *ELF)Read64BE(address uint64)(uint64, error) {
     b, err := e.readIntBytes(address, 8)
     if err != nil {
@@ -156,7 +156,7 @@ func (e *ELF)Read64BE(address uint64)(uint64, error) {
     return binary.BigEndian.Uint64(b), nil
 }
 
-// Disasm disassembles code at the specified virtual address and returns a string containing assembly instructions
+// Disasm is an ELF method that disassembles code at the specified virtual address and returns a string containing assembly instructions
 func (e *ELF)Disasm(address uint64, nBytes int)(string, error) {
     data, err := e.Read(address, nBytes)
     if err != nil {
@@ -168,7 +168,7 @@ func (e *ELF)Disasm(address uint64, nBytes int)(string, error) {
     return disasm(data, address, arch, mode, false)
 }
 
-// ROP locates all ROP gadgets in the ELF's executable segments and returns a ROP object
+// ROP is an ELF method that locates all ROP gadgets in the ELF's executable segments and returns a ROP object
 func (e *ELF)ROP() (*ROP, error) {
     file := e.E
     gadgets := ROP{}
@@ -196,12 +196,12 @@ func (e *ELF)ROP() (*ROP, error) {
     return &gadgets, nil
 }
 
-// GetSignatureVAddrs searches for the specified sequence of bytes in all segments
+// GetSignatureVAddrs is an ELF method that searches for the specified sequence of bytes in all segments
 func (e *ELF)GetSignatureVAddrs(signature []byte) ([]uint64, error) {
     return e.getSignatureVAddrs(signature, false)
 }
 
-// GetOpcodeVAddrs searches for the specified sequence of bytes in executable segments only
+// GetOpcodeVAddrs is an ELF method that searches for the specified sequence of bytes in executable segments only
 func (e *ELF)GetOpcodeVAddrs(signature []byte) ([]uint64, error) {
     return e.getSignatureVAddrs(signature, true)
 }
