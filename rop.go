@@ -17,14 +17,14 @@ type Gadget struct {
 // ROP is a interface for working with ROP gadgets
 type ROP []*Gadget
 
-// Dump locates and prints ROP gadgets contained in the ELF file to stdout
+// Dump is a ROP method that locates and prints ROP gadgets contained in the ELF file to stdout
 func (r *ROP)Dump() {
     for _, gadget := range []*Gadget(*r) {
         fmt.Printf("0x%08x: %v\n", gadget.Address, gadget.Instrs)
     }
 }
 
-// InstrSearch returns ROP object containing ROP gadgets with a sub-string match to the user-defined regex
+// InstrSearch is a ROP method that returns a ROP object containing gadgets with a sub-string match to the user-defined regex
 func (r *ROP)InstrSearch(regex string)(ROP, error) {
     re, err := regexp.Compile(regex)
     if err != nil {
