@@ -7,6 +7,7 @@ import(
     "io"
     "errors"
     "bytes"
+    "fmt"
 )
 
 // Remote is an interface for communicating over IP
@@ -114,4 +115,32 @@ func (r *Remote)Send(data []byte)(int, error) {
 func (r *Remote)SendLine(line []byte)(int, error) {
     line = append(line, '\n')
     return r.C.Write(line)
+}
+
+// Interactive is a Remote method that allows the user to interact with a remote process manually
+func (r *Remote)Interactive() error {
+    go func() {
+        for {
+            data, err := r.RecvN(1)
+            if err != nil {
+                break;
+            }
+
+            fmt.Printf("%c", data[0])
+        }
+    }()
+
+    for {
+        var line string
+        fmt.Scanln(&line)
+        if line == "_quit" {
+            fmt.Println("Exiting...");
+            return nil;
+        }
+
+        _, err := r.SendLine([]byte(line))
+        if err != nil {
+            return err;
+        }
+    }
 }
