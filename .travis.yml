@@ -27,3 +27,15 @@ script:
   - go test -v -run TestRecvUntil
   - go test -v -run TestRecvN
   - go test -v -run TestSend
+  - go test -v -run TestPackUint64LE
+  - go test -v -run TestPackUint32LE
+  - go test -v -run TestPackUint16LE
+  - go test -v -run TestPackUint64BE
+  - go test -v -run TestPackUint32BE
+  - go test -v -run TestPackUint16BE
+  - go test -v -run TestUnpackUint64LE
+  - go test -v -run TestUnpackUint32LE
+  - go test -v -run TestUnpackUint16LE
+  - go test -v -run TestUnpackUint64BE
+  - go test -v -run TestUnpackUint32BE
+  - go test -v -run TestUnpackUint16BE

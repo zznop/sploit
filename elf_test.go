@@ -8,7 +8,6 @@ import (
 
 var elfFile = "test/prog1.x86_64"
 
-// TestNewELF tests instantiation of the ELF object and detection of mitigations
 func TestNewELF(t *testing.T) {
     t.Logf("Testing ELF processing (%s)...", elfFile)
     e, err := NewELF(elfFile)
@@ -42,7 +41,6 @@ func TestNewELF(t *testing.T) {
     t.Log("Canary: " + strconv.FormatBool(e.Mitigations.Canary))
 }
 
-// TestELFBSS tests relative addressing in the BSS section
 func TestELFBSS(t *testing.T) {
     t.Logf("Testing .bss section addressing (%s)...", elfFile)
     e, _ := NewELF(elfFile)
@@ -57,7 +55,6 @@ func TestELFBSS(t *testing.T) {
     t.Logf(".bss+4 == 0x%08x", addr)
 }
 
-// TestELFRead tests reading data from an ELF at a specified virtual address
 func TestELFRead(t *testing.T) {
     t.Logf("Testing ELF vaddr reads (%s)...", elfFile)
     e, _ := NewELF(elfFile)
@@ -74,7 +71,6 @@ func TestELFRead(t *testing.T) {
     t.Logf("Read %v bytes from vaddr:0x%08x:\n%s", readSize, addr, hex.Dump(data))
 }
 
-// TestELFGetSignatureVAddrs test searching for bytes in all segments
 func TestELFGetSignatureVAddrs(t *testing.T) {
     t.Logf("Testing ELF binary signature search")
     e, _ := NewELF(elfFile)
@@ -88,7 +84,6 @@ func TestELFGetSignatureVAddrs(t *testing.T) {
     }
 }
 
-// TestELFGetOpcodeVAddrs tests searching for bytes in executable segments
 func TestELFGetOpcodeVAddrs(t *testing.T) {
     leaRDI := []byte{0x48, 0x8d, 0x3d, 0xb9, 0x0e, 0x00, 0x00}
     e, _ := NewELF(elfFile)
@@ -102,7 +97,6 @@ func TestELFGetOpcodeVAddrs(t *testing.T) {
     }
 }
 
-// TestRead8 tests reading 8-bit integers from an ELF
 func TestRead8(t *testing.T) {
     e, _ := NewELF(elfFile)
     i8, err := e.Read16LE(0x2c4)
@@ -115,7 +109,6 @@ func TestRead8(t *testing.T) {
     }
 }
 
-// TestRead16 tests reading 16-bit integers from an ELF
 func TestRead16(t *testing.T) {
     t.Logf("Testing 16-bit integer reads (%s)...", elfFile)
     e, _ := NewELF(elfFile)
@@ -138,7 +131,6 @@ func TestRead16(t *testing.T) {
     }
 }
 
-// TestRead32 tests reading 32-bit integers from an ELF
 func TestRead32(t *testing.T) {
     t.Logf("Testing 32-bit integer reads (%s)...", elfFile)
     e, _ := NewELF(elfFile)
@@ -161,7 +153,6 @@ func TestRead32(t *testing.T) {
     }
 }
 
-// TestRead64 tests reading 64-bit integers from an ELF
 func TestRead64(t *testing.T) {
     t.Logf("Testing 64-bit integer reads (%s)...", elfFile)
     e, _ := NewELF(elfFile)

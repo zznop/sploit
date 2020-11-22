@@ -5,7 +5,6 @@ import (
     "encoding/hex"
 )
 
-// TestDisasm tests disassembly logic
 func TestDisasm(t *testing.T) {
     t.Logf("Testing disassembly (%s)...", elfFile)
     addr := uint64(0x1135)
@@ -32,7 +31,6 @@ func TestDisasm(t *testing.T) {
     t.Log("\n" + disasm)
 }
 
-// TestAsmX8664 tests compilation of x86-64 assembly
 func TestAsmX8664(t *testing.T) {
     code := "mov rdi, 1337\nmov rsi, 1337\nmov rdx, 1337\nmov rcx, 1337\nnop\n"
     t.Logf("Testing assembly of following x86-64 instructions:\n%s", code)
@@ -49,7 +47,6 @@ func TestAsmX8664(t *testing.T) {
     t.Logf("Assembly code compiled to %v bytes:\n%s", len(opcodes), hex.Dump(opcodes))
 }
 
-// TestAsmARM tests compilation of ARM assembly
 func TestAsmARM(t *testing.T) {
     code := "mov r2, r1\nmov r3, r4\nmov r5, r6\n"
     t.Logf("Testing assembly of following ARM instructions:\n%s", code)
