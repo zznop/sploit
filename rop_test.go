@@ -5,7 +5,6 @@ import (
     "bytes"
 )
 
-// TestELFDumpROPGadgets tests ROP gadget dumping functionality
 func TestROPDump(t *testing.T) {
     t.Logf("Testing ROP gadget dump (%s)...", elfFile)
     e, _ := NewELF(elfFile)
@@ -16,7 +15,6 @@ func TestROPDump(t *testing.T) {
     r.Dump()
 }
 
-// TestROPInstrSearch tests searching for ROP gadgets by regex
 func TestROPInstrSearch(t *testing.T) {
     t.Logf("Testing ROP gadget search (%s)...", elfFile)
     e, _ := NewELF(elfFile)

@@ -6,7 +6,6 @@ import(
     "testing"
 )
 
-// TestRecvLine tests receiving a line of data from a TCP server
 func TestRecvLine(t *testing.T) {
     go func() {
         time.Sleep(500 * time.Millisecond)
@@ -40,7 +39,6 @@ func TestRecvLine(t *testing.T) {
     conn.Write([]byte("lolwut\n"))
 }
 
-// TestRecvUntil tests receiving until a specified sequence of bytes
 func TestRecvUntil(t *testing.T) {
     go func() {
         time.Sleep(500 * time.Millisecond)
@@ -75,7 +73,6 @@ func TestRecvUntil(t *testing.T) {
     conn.Write([]byte("cmd>"))
 }
 
-// TestRecvN tests receiving a specified number of bytes
 func TestRecvN(t *testing.T) {
     go func() {
         time.Sleep(500 * time.Millisecond)
@@ -109,7 +106,6 @@ func TestRecvN(t *testing.T) {
     conn.Write([]byte("lolwut"))
 }
 
-// TestSend tests sending data using Remote's Send and SendLine methods
 func TestSend(t *testing.T) {
     go func() {
         time.Sleep(500 * time.Millisecond)
