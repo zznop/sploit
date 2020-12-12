@@ -4,10 +4,12 @@ import (
 	sp "github.com/zznop/sploit"
 )
 
+// I386 is a shellcode interface for 32-bit intel processors
 type I386 struct {
 	arch *sp.Processor
 }
 
+// NewI386 returns a pointer to a I386 type
 func NewI386() *I386 {
 	arch := &sp.Processor{
 		Architecture: sp.ArchI386,
@@ -19,6 +21,7 @@ func NewI386() *I386 {
 	}
 }
 
+// LinuxShell is a method for JIT compiling shellcode that executes /bin/sh
 func (i386 *I386) LinuxShell() ([]byte, error) {
 	instrs := `xor ecx, ecx
                mul ecx
