@@ -7,7 +7,7 @@ import (
 
 func TestI386LinuxShell(t *testing.T) {
 	i386 := NewI386()
-	shellcode, err := i386.Shell()
+	shellcode, err := i386.LinuxShell()
 	if err != nil {
 		t.Fatal(err)
 	}

