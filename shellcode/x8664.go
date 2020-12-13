@@ -4,10 +4,12 @@ import (
 	sp "github.com/zznop/sploit"
 )
 
+// X8664 is a shellcode interface for 64-bit intel processors
 type X8664 struct {
 	arch *sp.Processor
 }
 
+// NewX8664 returns a pointer to a shellcode X8664 type
 func NewX8664() *X8664 {
 	arch := &sp.Processor{
 		Architecture: sp.ArchX8664,
@@ -19,6 +21,7 @@ func NewX8664() *X8664 {
 	}
 }
 
+// LinuxMemFdExec constructs a payload to run the supplied executable in an anonymous file descriptor
 func (x8664 *X8664) LinuxMemFdExec() ([]byte, error) {
 	instrs := `
 jmp past
