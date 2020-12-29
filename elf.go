@@ -51,6 +51,21 @@ func NewELF(filename string) (*ELF, error) {
 	}, nil
 }
 
+// OffsetToVA determines the virtual address for the specified file offset
+func (e *ELF) OffsetToAddr(offset uint64) (uint64, error) {
+	for i := 0; i < len(e.E.Progs); i++ {
+		s := e.E.Progs[i]
+		start := s.Off
+		end := s.Off + s.Filesz
+
+		if offset >= start && offset < end {
+			return offset - s.Off + s.Vaddr, nil
+		}
+	}
+
+	return 0, errors.New("Offset is not in range of an ELF segment")
+}
+
 // BSS is an ELF method that returns the virtual address of the specified offset into the .bss section
 func (e *ELF) BSS(offset uint64) (uint64, error) {
 	section := e.E.Section(".bss")

