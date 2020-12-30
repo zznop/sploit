@@ -1,4 +1,4 @@
-FROM debian:10
+FROM golang:1.15.6-buster
 
 RUN apt-get update && apt-get install -y \
     git                                  \
