@@ -39,3 +39,4 @@ script:
   - go test -v -run TestUnpackUint64BE
   - go test -v -run TestUnpackUint32BE
   - go test -v -run TestUnpackUint16BE
+  - go test -v -run TestX8664LinuxShell
