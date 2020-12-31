@@ -1,0 +1,21 @@
+name: test
+on:
+  push:
+    branches: [ '**' ]
+    tags-ignore: [ '*' ]
+  pull_request:
+    branches: [ '**' ]
+    tags-ignore: [ '*' ]
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    container:
+      image: zznop/sploit:latest
+      credentials:
+        username: zznop
+        password: ${{ secrets.docker_hub_password}}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run Unit Tests
+        run: go test ./... -v
