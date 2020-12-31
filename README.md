@@ -1,4 +1,4 @@
-# sploit [![Build Status](https://travis-ci.org/zznop/sploit.svg?branch=master)](https://travis-ci.org/zznop/sploit)
+# sploit ![Test Status](https://github.com/zznop/sploit/workflows/test/badge.svg)
 
 Sploit is a Go package that aids in binary analysis and exploitation. The motivating factor behind the development of
 sploit is to be able to have a well designed API with functionality that rivals some of the more common Python exploit
