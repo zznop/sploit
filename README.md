@@ -175,3 +175,10 @@ and may need changed if running another Linux distro:
 sudo apt install gcc gcc-arm-linux-gnueabi gcc-aarch64-linux-gnu gcc-mips-linux-gnu \
   gcc-mipsel-linux-gnu gcc-powerpc-linux-gnu
 ```
+
+If you would rather use docker, an image containing the external dependences is on
+[Docker Hub](https://hub.docker.com/repository/docker/zznop/sploit). Pull it with the following command:
+
+```
+docker pull zznop/sploit:latest
+```
