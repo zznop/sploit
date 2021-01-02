@@ -186,3 +186,55 @@ func TestELFSave(t *testing.T) {
 	}
 	os.Remove(filePath)
 }
+
+func TestELFRawPatch(t *testing.T) {
+	t.Log("Testing ELF raw patch...")
+	e1, _ := NewELF(elfFile)
+	err := e1.RawPatch([]byte{0x41, 0x41, 0x41, 0x41}, 0x2f0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	filePath := "/tmp/test_raw_patch"
+	err = e1.Save(filePath, 0777)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(filePath)
+
+	e2, _ := NewELF(filePath)
+	i32, err := e2.Read32LE(0x2f0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if i32 != 0x41414141 {
+		t.Fatal(err)
+	}
+}
+
+func TestELFAsmPatch(t *testing.T) {
+	t.Log("Testing ELF assembly patch...")
+	e1, _ := NewELF(elfFile)
+	err := e1.AsmPatch("nop\nnop\nnop\nnop\n", 0x1135)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	filePath := "/tmp/test_asm_patch"
+	err = e1.Save(filePath, 0777)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(filePath)
+
+	e2, _ := NewELF(filePath)
+	i32, err := e2.Read32LE(0x1135)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if i32 != 0x90909090 {
+		t.Fatal(err)
+	}
+}
