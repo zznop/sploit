@@ -2,6 +2,7 @@ package sploit
 
 import (
 	"encoding/hex"
+	"os"
 	"strconv"
 	"testing"
 )
@@ -173,4 +174,15 @@ func TestRead64(t *testing.T) {
 	if i64 != 0x474e550044a1953e {
 		t.Fatal("Big endian uint64 != 0x474e550044a1953e")
 	}
+}
+
+func TestELFSave(t *testing.T) {
+	t.Log("Testing ELF save/export...")
+	filePath := "/tmp/test_save"
+	e, _ := NewELF(elfFile)
+	err := e.Save(filePath, 0777)
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Remove(filePath)
 }

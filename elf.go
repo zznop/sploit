@@ -6,6 +6,8 @@ import (
 	"encoding/binary"
 	"errors"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
+	"os"
 )
 
 // ELF is a struct that contains methods for operating on an ELF file
@@ -14,10 +16,22 @@ type ELF struct {
 	Processor   *Processor
 	PIE         bool
 	Mitigations *Mitigations
+	raw         []byte
 }
 
 // NewELF loads a ELF file from disk and initializes the ELF struct
 func NewELF(filename string) (*ELF, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	rawData, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+
 	e, err := elf.Open(filename)
 	if err != nil {
 		return nil, err
@@ -48,6 +62,7 @@ func NewELF(filename string) (*ELF, error) {
 		Processor:   processor,
 		PIE:         isPIE,
 		Mitigations: mitigations,
+		raw:         rawData,
 	}, nil
 }
 
@@ -219,6 +234,11 @@ func (e *ELF) GetSignatureVAddrs(signature []byte) ([]uint64, error) {
 // GetOpcodeVAddrs is an ELF method that searches for the specified sequence of bytes in executable segments only
 func (e *ELF) GetOpcodeVAddrs(signature []byte) ([]uint64, error) {
 	return e.getSignatureVAddrs(signature, true)
+}
+
+// Save is a ELF method for saving the raw ELF content to a specified file path
+func (e *ELF) Save(filePath string, fileMode os.FileMode) error {
+	return ioutil.WriteFile(filePath, e.raw, fileMode)
 }
 
 func (e *ELF) getSignatureVAddrs(signature []byte, exeOnly bool) ([]uint64, error) {
