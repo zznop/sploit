@@ -187,29 +187,36 @@ func TestELFSave(t *testing.T) {
 	os.Remove(filePath)
 }
 
-func TestELFRawPatch(t *testing.T) {
+func TestELFWrite(t *testing.T) {
 	t.Log("Testing ELF raw patch...")
 	e1, _ := NewELF(elfFile)
-	err := e1.RawPatch([]byte{0x41, 0x41, 0x41, 0x41}, 0x2f0)
-	if err != nil {
-		t.Fatal(err)
-	}
+	e1.Write([]byte{0x41, 0x41, 0x41, 0x41}, 0x2f0)
+	e1.Write8(0x42, 0x2f4)
+	e1.Write16LE(0xf00b, 0x2f5)
+	e1.Write16BE(0xf00b, 0x2f7)
+	e1.Write32LE(0xfeedface, 0x2f9)
+	e1.Write32BE(0xfeedface, 0x2fd)
+	e1.Write64LE(0xdeadbeefdeadbeef, 0x301)
+	e1.Write64BE(0xdeadbeefdeadbeef, 0x309)
 
 	filePath := "/tmp/test_raw_patch"
-	err = e1.Save(filePath, 0777)
+	err := e1.Save(filePath, 0777)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.Remove(filePath)
 
 	e2, _ := NewELF(filePath)
-	i32, err := e2.Read32LE(0x2f0)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if i32 != 0x41414141 {
-		t.Fatal(err)
+	data, _ := e2.Read32LE(0x2f0)
+	i8, _ := e2.Read8(0x2f4)
+	i16, _ := e2.Read16LE(0x2f5)
+	i16BE, _ := e2.Read16BE(0x2f7)
+	i32, _ := e2.Read32LE(0x2f9)
+	i32BE, _ := e2.Read32BE(0x2fd)
+	i64, _ := e2.Read64LE(0x301)
+	i64BE, _ := e2.Read64BE(0x309)
+	if data != 0x41414141 || i8 != 0x42 || i16 != 0xf00b || i16BE != 0xf00b || i32 != 0xfeedface || i32BE != 0xfeedface || i64 != 0xdeadbeefdeadbeef || i64BE != 0xdeadbeefdeadbeef {
+		t.Fatal("read data != expected")
 	}
 }
 

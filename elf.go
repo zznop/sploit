@@ -131,6 +131,52 @@ func (e *ELF) Read(address uint64, nBytes int) ([]byte, error) {
 	return buf, nil
 }
 
+// Write copies data to the in-memory raw ELF data at the specified virtual address
+func (e *ELF) Write(data []byte, address uint64) error {
+	offset, err := e.AddrToOffset(address)
+	if err != nil {
+		return err
+	}
+
+	copy(e.raw[offset:offset+uint64(len(data))], data)
+	return nil
+}
+
+// Write8 copies a uint8 to the in-memory ELF data at the specified address
+func (e *ELF) Write8(i uint8, address uint64) error {
+	return e.Write([]byte{i}, address)
+}
+
+// Write16LE copies a uint16 (little endian) to the in-memory ELF data at the specified address
+func (e *ELF) Write16LE(i uint16, address uint64) error {
+	return e.Write(PackUint16LE(i), address)
+}
+
+// Write16BE copies a uint16 (big endian) to the in-memory ELF data at the specified address
+func (e *ELF) Write16BE(i uint16, address uint64) error {
+	return e.Write(PackUint16BE(i), address)
+}
+
+// Write32LE copies a uint32 (little endian) to the in-memory ELF data at the specified address
+func (e *ELF) Write32LE(i uint32, address uint64) error {
+	return e.Write(PackUint32LE(i), address)
+}
+
+// Write32BE copies a uint32 (big endian) to the in-memory ELF data at the specified address
+func (e *ELF) Write32BE(i uint32, address uint64) error {
+	return e.Write(PackUint32BE(i), address)
+}
+
+// Write64LE copies a uint64 (little endian) to the in-memory ELF data at the specified address
+func (e *ELF) Write64LE(i uint64, address uint64) error {
+	return e.Write(PackUint64LE(i), address)
+}
+
+// Write64BE copies a uint64 (big endian) to the in-memory ELF data at the specified address
+func (e *ELF) Write64BE(i uint64, address uint64) error {
+	return e.Write(PackUint64BE(i), address)
+}
+
 // Read8 reads 8 bits from the ELF at the specified address and returns the data as a uint8
 func (e *ELF) Read8(address uint64) (uint8, error) {
 	b, err := e.readIntBytes(address, 1)
@@ -256,17 +302,6 @@ func (e *ELF) Save(filePath string, fileMode os.FileMode) error {
 	return ioutil.WriteFile(filePath, e.raw, fileMode)
 }
 
-// RawPatch copies data to the in-memory raw ELF data at the specified virtual address
-func (e *ELF) RawPatch(data []byte, address uint64) error {
-	offset, err := e.AddrToOffset(address)
-	if err != nil {
-		return err
-	}
-
-	copy(e.raw[offset:offset+uint64(len(data))], data)
-	return nil
-}
-
 // AsmPatch compiles an assembly patch and writes it to the in-memory raw ELF data at the specified virtual address
 func (e *ELF) AsmPatch(code string, address uint64) error {
 	opcode, err := Asm(e.Processor, code)
@@ -274,7 +309,7 @@ func (e *ELF) AsmPatch(code string, address uint64) error {
 		return err
 	}
 
-	return e.RawPatch(opcode, address)
+	return e.Write(opcode, address)
 }
 
 func (e *ELF) getSignatureVAddrs(signature []byte, exeOnly bool) ([]uint64, error) {
