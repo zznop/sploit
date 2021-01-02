@@ -66,7 +66,7 @@ func NewELF(filename string) (*ELF, error) {
 	}, nil
 }
 
-// OffsetToVA determines the virtual address for the specified file offset
+// OffsetToAddr determines the virtual address for the specified file offset
 func (e *ELF) OffsetToAddr(offset uint64) (uint64, error) {
 	for i := 0; i < len(e.E.Progs); i++ {
 		s := e.E.Progs[i]

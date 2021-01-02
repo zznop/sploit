@@ -78,10 +78,54 @@ func main() {
 ```
 
 ```
-$ ./assemble_example
+> ./assemble_example
 Opcode bytes:
 00000000  4c 89 e1 4c 89 ea 49 c7  c0 1f 00 00 00 4d 31 c9  |L..L..I......M1.|
 00000010  48 83 ec 08 48 89 44 24  28                       |H...H.D$(|
+```
+
+#### Patching an ELF File
+
+```go
+package main
+
+import (
+    "fmt"
+    sp "github.com/zznop/sploit"
+)
+
+var origProgram = "../test/prog1.x86_64"
+var patchedProgram = "./patched"
+
+var patchInstrs = `
+jmp past
+
+message:
+    .ascii "This is an example patch payload\n"
+
+past:
+    mov rdi, 1                    /* STDOUT file descriptor */
+    lea rsi, [rip + message]      /* Pointer to message string */
+    mov rdx, 33                   /* Message size */
+    mov rax, 1                    /* __NR_write */
+    syscall                       /* Execute system call */
+self:
+    jmp self                      /* Hang forever */
+`
+
+func main() {
+    e, _ := sp.NewELF(origProgram)
+    e.AsmPatch(patchInstrs, 0x1050)
+    e.Save(patchedProgram, 0777)
+}
+```
+
+```
+> ./patch_elf
+Patching _start of ../test/prog1.x86_64
+Exporting patched ELF to ./patched
+> ./patched
+This is an example patch payload
 ```
 
 #### Disassembling Code in an ELF Executable
@@ -107,7 +151,7 @@ func main() {
 ```
 
 ```
-$ ./disassemble_example
+> ./disassemble_example
 Disassembling 34 bytes at vaddr:00001135
 00001135: push rbp
 00001136: mov rbp, rsp
