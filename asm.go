@@ -14,6 +14,11 @@ var sourcePath = "/tmp/prog.S"
 var objectPath = "/tmp/prog.o"
 var blobPath = "/tmp/prog.bin"
 
+const (
+	formatELF = iota
+	formatObj
+)
+
 // Asm complies assembly instructions to a byte slice containing machine code
 func Asm(processor *Processor, code string) ([]byte, error) {
 	prefix, err := getToolchainPrefix(processor)
@@ -21,12 +26,7 @@ func Asm(processor *Processor, code string) ([]byte, error) {
 		return nil, err
 	}
 
-	err = createSourceFile(processor, code)
-	if err != nil {
-		return nil, err
-	}
-
-	err = buildProgram(processor, prefix)
+	err = buildProgram(processor, prefix, code, formatObj)
 	if err != nil {
 		return nil, err
 	}
@@ -36,6 +36,22 @@ func Asm(processor *Processor, code string) ([]byte, error) {
 	os.Remove(objectPath)
 	os.Remove(blobPath)
 	return opcodes, err
+}
+
+// MakeELF builds an ELF from assembly code
+func MakeELF(processor *Processor, code string, filePath string) error {
+	prefix, err := getToolchainPrefix(processor)
+	if err != nil {
+		return err
+	}
+
+	err = buildProgram(processor, prefix, code, formatELF)
+	if err != nil {
+		return err
+	}
+
+	os.Remove(sourcePath)
+	return os.Rename(objectPath, filePath)
 }
 
 // Disasm disassembles a supplied byte slice and returns a string containing the assembly instructions
@@ -59,14 +75,25 @@ func createSourceFile(processor *Processor, code string) error {
 	return nil
 }
 
-func buildProgram(processor *Processor, prefix string) error {
+func buildProgram(processor *Processor, prefix string, code string, format int) error {
+	if err := createSourceFile(processor, code); err != nil {
+		return err
+	}
+
 	compilerExe, err := exec.LookPath(prefix + "gcc")
 	if err != nil {
 		return err
 	}
 
 	// Construct compile command arguments
-	args := []string{compilerExe, "-c", "-fpic"}
+	args := []string{compilerExe}
+	switch format {
+	case formatObj:
+		args = append(args, "-c")
+	case formatELF:
+		args = append(args, "-nostdlib")
+	}
+
 	if processor.Architecture == ArchI386 {
 		args = append(args, "-m32")
 	}
