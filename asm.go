@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/knightsc/gapstone"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -132,14 +131,12 @@ func dumpText(prefix string) ([]byte, error) {
 		return nil, err
 	}
 
-	// Open the objcopy'd blob
 	f, err := os.Open(blobPath)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 
-	// Read the entire thing
 	opcodes, err := ioutil.ReadAll(f)
 	if err != nil {
 		return nil, err
@@ -198,7 +195,6 @@ func disasm(data []byte, address uint64, arch int, mode int, isROP bool) (string
 		}
 	}
 
-	log.Debugf(insnsStr)
 	return insnsStr, nil
 }
 

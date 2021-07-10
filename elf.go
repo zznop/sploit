@@ -5,7 +5,6 @@ import (
 	"debug/elf"
 	"encoding/binary"
 	"errors"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 )
@@ -47,15 +46,6 @@ func NewELF(filename string) (*ELF, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	log.Debugf(
-		"Machine Type : %s\n"+
-			"Endian       : %s\n"+
-			"PIE          : %v\n"+
-			"Stack Canary : %v\n"+
-			"NX           : %v\n",
-		e.Machine, processor.Endian, isPIE, mitigations.Canary, mitigations.NX,
-	)
 
 	return &ELF{
 		E:           e,
