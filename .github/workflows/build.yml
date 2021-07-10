@@ -18,4 +18,4 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Run Unit Tests
-        run: go test ./... -v
+        run: go test ./... -v -covermode=count
