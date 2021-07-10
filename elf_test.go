@@ -170,7 +170,6 @@ func TestRead64BE(t *testing.T) {
 }
 
 func TestELFSave(t *testing.T) {
-	t.Log("Testing ELF save/export...")
 	filePath := "/tmp/test_save"
 	e, _ := NewELF(elfFile)
 	err := e.Save(filePath, 0777)

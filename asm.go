@@ -50,7 +50,12 @@ func MakeELF(processor *Processor, code string, filePath string) error {
 	}
 
 	os.Remove(sourcePath)
-	return os.Rename(objectPath, filePath)
+	err = os.Rename(objectPath, filePath)
+	if err != nil {
+		os.Remove(objectPath)
+	}
+
+	return err
 }
 
 // Disasm disassembles a supplied byte slice and returns a string containing the assembly instructions

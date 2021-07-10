@@ -1,6 +1,8 @@
 package sploit
 
 import (
+	"bytes"
+	"os"
 	"testing"
 )
 
@@ -34,12 +36,15 @@ func TestAsmX8664(t *testing.T) {
 		Endian:       LittleEndian,
 	}
 
-	_, err := Asm(processor, code)
+	opcode, err := Asm(processor, code)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// TODO: compare opcodes
+	expected := []byte{0x48, 0xc7, 0xc7, 0x39, 0x05, 0x00, 0x00, 0x48, 0xc7, 0xc6, 0x39, 0x05, 0x00, 0x00, 0x48, 0xc7, 0xc2, 0x39, 0x05, 0x00, 0x00, 0x48, 0xc7, 0xc1, 0x39, 0x05, 0x00, 0x00, 0x90}
+	if bytes.Compare(opcode, expected) != 0 {
+		t.Fatal("Opcode bytes does not match expected")
+	}
 }
 
 func TestMakeELF(t *testing.T) {
@@ -70,6 +75,7 @@ past:
 	}
 
 	err := MakeELF(processor, code, "/tmp/test.elf")
+	defer os.Remove("/tmp/test.elf")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,10 +88,13 @@ func TestAsmARM(t *testing.T) {
 		Endian:       LittleEndian,
 	}
 
-	_, err := Asm(processor, code)
+	opcode, err := Asm(processor, code)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// TODO: compare opcodes
+	expected := []byte{0x01, 0x20, 0xa0, 0xe1, 0x04, 0x30, 0xa0, 0xe1, 0x06, 0x50, 0xa0, 0xe1}
+	if bytes.Compare(opcode, expected) != 0 {
+		t.Fatal("Opcode bytes does not match expected")
+	}
 }
