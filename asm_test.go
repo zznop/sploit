@@ -1,12 +1,10 @@
 package sploit
 
 import (
-	"encoding/hex"
 	"testing"
 )
 
 func TestDisasm(t *testing.T) {
-	t.Logf("Testing disassembly (%s)...", elfFile)
 	addr := uint64(0x1135)
 	n := 32
 	e, _ := NewELF(elfFile)
@@ -27,28 +25,24 @@ func TestDisasm(t *testing.T) {
 	if disasm != expected {
 		t.Fatal("Disassembly does not match expected")
 	}
-	t.Logf("Successfully disassembled %v bytes at vaddr:0x%08x:", n, addr)
-	t.Log("\n" + disasm)
 }
 
 func TestAsmX8664(t *testing.T) {
 	code := "mov rdi, 1337\nmov rsi, 1337\nmov rdx, 1337\nmov rcx, 1337\nnop\n"
-	t.Logf("Testing assembly of following x86-64 instructions:\n%s", code)
 	processor := &Processor{
 		Architecture: ArchX8664,
 		Endian:       LittleEndian,
 	}
 
-	opcodes, err := Asm(processor, code)
+	_, err := Asm(processor, code)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Logf("Assembly code compiled to %v bytes:\n%s", len(opcodes), hex.Dump(opcodes))
+	// TODO: compare opcodes
 }
 
 func TestMakeELF(t *testing.T) {
-	t.Log("Testing MakeELF ...")
 	code := `
 jmp past
 
@@ -83,16 +77,15 @@ past:
 
 func TestAsmARM(t *testing.T) {
 	code := "mov r2, r1\nmov r3, r4\nmov r5, r6\n"
-	t.Logf("Testing assembly of following ARM instructions:\n%s", code)
 	processor := &Processor{
 		Architecture: ArchARM,
 		Endian:       LittleEndian,
 	}
 
-	opcodes, err := Asm(processor, code)
+	_, err := Asm(processor, code)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Logf("Assembly code compiled to %v bytes:\n%s", len(opcodes), hex.Dump(opcodes))
+	// TODO: compare opcodes
 }
