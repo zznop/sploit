@@ -47,6 +47,40 @@ func TestAsmX8664(t *testing.T) {
 	t.Logf("Assembly code compiled to %v bytes:\n%s", len(opcodes), hex.Dump(opcodes))
 }
 
+func TestMakeELF(t *testing.T) {
+	t.Log("Testing MakeELF ...")
+	code := `
+jmp past
+
+message:
+    .ascii "See, I am drow, and I'd like to say hello,\n"
+    .ascii "To the black, to the white, the red and the brown,\n"
+    .ascii "The purple and yellow. But first, I gotta\n"
+    .ascii "Bang bang, the boogie to the boogie,\n"
+    .ascii "Say up jump the boogie to the bang bang boogie,\n"
+    .ascii "Let's rock, you don't stop ...\n\n"
+
+past:
+    mov rdi, 1                    /* STDOUT file descriptor */
+    lea rsi, [rip + message]      /* Pointer to message string */
+    mov rdx, 253                  /* Message size */
+    mov rax, 1                    /* Write syscall number */
+    syscall                       /* Execute system call */
+    mov rdi, 0                    /* Success */
+    mov rax, 60                   /* Exit syscall number */
+    syscall                       /* Execute system call */`
+
+	processor := &Processor{
+		Architecture: ArchX8664,
+		Endian:       LittleEndian,
+	}
+
+	err := MakeELF(processor, code, "/tmp/test.elf")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestAsmARM(t *testing.T) {
 	code := "mov r2, r1\nmov r3, r4\nmov r5, r6\n"
 	t.Logf("Testing assembly of following ARM instructions:\n%s", code)
