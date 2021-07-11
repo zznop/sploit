@@ -163,6 +163,7 @@ func getToolchainPrefix(processor *Processor) (string, error) {
 }
 
 func disasm(data []byte, address uint64, arch int, mode int, isROP bool) (string, error) {
+
 	engine, err := gapstone.New(arch, mode)
 	if err != nil {
 		return "", err
@@ -206,10 +207,10 @@ func getCapstoneMode(processor *Processor) int {
 	modes := map[Architecture]int{
 		ArchX8664:   gapstone.CS_MODE_64,
 		ArchI386:    gapstone.CS_MODE_32,
-		ArchARM:     gapstone.CS_MODE_32,
-		ArchAARCH64: gapstone.CS_MODE_64,
-		ArchPPC:     gapstone.CS_MODE_32,
-		ArchMIPS:    gapstone.CS_MODE_32,
+		ArchARM:     gapstone.CS_MODE_ARM,
+		ArchAARCH64: gapstone.CS_MODE_ARM,
+		ArchPPC:     0, // Mode just needs CS_MODE_BIG_ENDIAN
+		ArchMIPS:    gapstone.CS_MODE_MIPS32,
 		ArchIA64:    gapstone.CS_MODE_64,
 	}
 	mode := modes[processor.Architecture]

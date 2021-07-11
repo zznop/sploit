@@ -1,11 +1,19 @@
 package sploit
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 )
+
+// GadgetExpr is a structure used to match gadget opcodes
+type GadgetExpr struct {
+	Operation []byte
+	RegStart  uint8
+	RegEnd    uint8
+}
 
 // Gadget stores information about a ROP gadgets including the address, instructions, and opcode bytes
 type Gadget struct {
@@ -41,7 +49,7 @@ func (r *ROP) InstrSearch(regex string) (ROP, error) {
 	return matchGadgets, nil
 }
 
-func disasmInstrsFromRet(processor *Processor, data []byte, index int, address uint64) ([]*Gadget, error) {
+func disasmInstrsFromRetIntel(processor *Processor, data []byte, index int, address uint64) ([]*Gadget, error) {
 	stop := index - 15
 	if stop < 0 {
 		stop = 0
@@ -77,7 +85,7 @@ func findGadgetsIntel(processor *Processor, data []byte, address uint64) ([]*Gad
 	gadgets := []*Gadget{}
 	for i := 0; i < len(data); i++ {
 		if data[i] == 0xc3 || data[i] == 0xcb {
-			gadgetsRet, err := disasmInstrsFromRet(processor, data, i, address)
+			gadgetsRet, err := disasmInstrsFromRetIntel(processor, data, i, address)
 			if err != nil {
 				return nil, err
 			}
@@ -89,6 +97,80 @@ func findGadgetsIntel(processor *Processor, data []byte, address uint64) ([]*Gad
 	return gadgets, nil
 }
 
+func reverseSlice(s []byte) []byte {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i]
+	}
+
+	return s
+}
+
+// TODO: this can be combined with the intel version
+func disasmInstrsFromRetARM(processor *Processor, data []byte, index int, address uint64) ([]*Gadget, error) {
+	stop := index - 16
+	if stop < 0 {
+		stop = 0
+	}
+
+	gadgets := []*Gadget{}
+	for i := index - 4; i > stop; i -= 4 {
+		instr, err := disasmGadget(address+uint64(i), data[i:index+4], processor)
+		if err != nil {
+			continue
+		}
+
+		gadgets = append(
+			gadgets,
+			&Gadget{
+				Address: address + uint64(i),
+				Instrs:  instr,
+				Opcode:  data[i : index+4],
+			},
+		)
+	}
+
+	return gadgets, nil
+}
+
+func findGadgetsARM(processor *Processor, data []byte, address uint64) ([]*Gadget, error) {
+	gadgetExprs := []GadgetExpr{
+		GadgetExpr{[]byte{0xe1, 0x2f, 0xff}, 0x10, 0x1e}, // bx reg
+		GadgetExpr{[]byte{0xe1, 0x2f, 0xff}, 0x30, 0x3e}, // blx reg
+	}
+
+	var gadgets [][]byte
+	for i := 0; i < len(gadgetExprs); i++ {
+		for j := gadgetExprs[i].RegStart; j < gadgetExprs[i].RegEnd; j++ {
+			gadget := make([]byte, len(gadgetExprs[i].Operation)+1)
+			copy(gadget, gadgetExprs[i].Operation)
+			gadget[len(gadget)-1] = byte(j)
+			if processor.Endian == LittleEndian {
+				gadget = reverseSlice(gadget)
+			}
+			gadgets = append(gadgets, gadget)
+		}
+	}
+
+	fullGadgets := []*Gadget{}
+	for i := 0; i < len(data); i += 4 {
+		for j := 0; j < len(gadgets); j++ {
+			if i+len(gadgets[j]) > len(data) {
+				break
+			}
+
+			if bytes.Compare(data[i:i+len(gadgets[j])], gadgets[j]) == 0 {
+				gadgetsRet, err := disasmInstrsFromRetARM(processor, data, i, address)
+				if err != nil {
+					return nil, err
+				}
+				fullGadgets = append(fullGadgets, gadgetsRet...)
+			}
+		}
+	}
+
+	return fullGadgets, nil
+}
+
 func findGadgets(processor *Processor, data []byte, address uint64) ([]*Gadget, error) {
 	switch processor.Architecture {
 	case ArchX8664:
@@ -97,7 +179,9 @@ func findGadgets(processor *Processor, data []byte, address uint64) ([]*Gadget, 
 		return findGadgetsIntel(processor, data, address)
 	case ArchI386:
 		return findGadgetsIntel(processor, data, address)
+	case ArchARM:
+		return findGadgetsARM(processor, data, address)
 	default:
-		return nil, errors.New("ROP interface currently only supports Intel binaries")
+		return nil, errors.New("ROP interface currently only supports Intel and ARM binaries")
 	}
 }
