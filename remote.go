@@ -99,11 +99,7 @@ func (r *Remote) RecvN(n int) ([]byte, error) {
 		return nil, err
 	}
 
-	if rn != n {
-		return nil, errors.New("RecvN truncated")
-	}
-
-	return b, nil
+	return b[:rn], nil
 }
 
 // Send is a Remote method for sending data over IP

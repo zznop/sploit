@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/knightsc/gapstone"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -15,8 +14,8 @@ var objectPath = "/tmp/prog.o"
 var blobPath = "/tmp/prog.bin"
 
 const (
-	formatELF = iota
-	formatObj
+	outputFormatELF = iota
+	outputFormatObj
 )
 
 // Asm complies assembly instructions to a byte slice containing machine code
@@ -26,7 +25,7 @@ func Asm(processor *Processor, code string) ([]byte, error) {
 		return nil, err
 	}
 
-	err = buildProgram(processor, prefix, code, formatObj)
+	err = buildProgram(processor, prefix, code, outputFormatObj)
 	if err != nil {
 		return nil, err
 	}
@@ -45,13 +44,18 @@ func MakeELF(processor *Processor, code string, filePath string) error {
 		return err
 	}
 
-	err = buildProgram(processor, prefix, code, formatELF)
+	err = buildProgram(processor, prefix, code, outputFormatELF)
 	if err != nil {
 		return err
 	}
 
 	os.Remove(sourcePath)
-	return os.Rename(objectPath, filePath)
+	err = os.Rename(objectPath, filePath)
+	if err != nil {
+		os.Remove(objectPath)
+	}
+
+	return err
 }
 
 // Disasm disassembles a supplied byte slice and returns a string containing the assembly instructions
@@ -67,12 +71,7 @@ func createSourceFile(processor *Processor, code string) error {
 		srcCode += ".intel_syntax noprefix"
 	}
 	srcCode += "\n\n_start:\n" + code
-	err := ioutil.WriteFile(sourcePath, []byte(srcCode), 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ioutil.WriteFile(sourcePath, []byte(srcCode), 0644)
 }
 
 func buildProgram(processor *Processor, prefix string, code string, format int) error {
@@ -86,21 +85,17 @@ func buildProgram(processor *Processor, prefix string, code string, format int) 
 	}
 
 	// Construct compile command arguments
-	args := []string{compilerExe}
+	args := []string{compilerExe, sourcePath, "-o", objectPath}
 	switch format {
-	case formatObj:
+	case outputFormatObj:
 		args = append(args, "-c")
-	case formatELF:
+	case outputFormatELF:
 		args = append(args, "-nostdlib")
 	}
 
 	if processor.Architecture == ArchI386 {
 		args = append(args, "-m32")
 	}
-
-	args = append(args, sourcePath)
-	args = append(args, "-o")
-	args = append(args, objectPath)
 
 	cmdCompile := &exec.Cmd{
 		Path:   compilerExe,
@@ -132,20 +127,12 @@ func dumpText(prefix string) ([]byte, error) {
 		return nil, err
 	}
 
-	// Open the objcopy'd blob
 	f, err := os.Open(blobPath)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-
-	// Read the entire thing
-	opcodes, err := ioutil.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
-
-	return opcodes, nil
+	return ioutil.ReadAll(f)
 }
 
 func getToolchainPrefix(processor *Processor) (string, error) {
@@ -198,7 +185,6 @@ func disasm(data []byte, address uint64, arch int, mode int, isROP bool) (string
 		}
 	}
 
-	log.Debugf(insnsStr)
 	return insnsStr, nil
 }
 

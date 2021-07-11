@@ -6,7 +6,6 @@ import (
 )
 
 func TestROPDump(t *testing.T) {
-	t.Logf("Testing ROP gadget dump (%s)...", elfFile)
 	e, _ := NewELF(elfFile)
 	r, err := e.ROP()
 	if err != nil {
@@ -16,7 +15,6 @@ func TestROPDump(t *testing.T) {
 }
 
 func TestROPInstrSearch(t *testing.T) {
-	t.Logf("Testing ROP gadget search (%s)...", elfFile)
 	e, _ := NewELF(elfFile)
 	r, _ := e.ROP()
 	gadgets, err := r.InstrSearch(".*")

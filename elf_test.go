@@ -1,65 +1,53 @@
 package sploit
 
 import (
-	"encoding/hex"
 	"os"
-	"strconv"
 	"testing"
 )
 
 var elfFile = "test/prog1.x86_64"
 
 func TestNewELF(t *testing.T) {
-	t.Logf("Testing ELF processing (%s)...", elfFile)
 	e, err := NewELF(elfFile)
 	if err != nil {
-		t.Fatalf("NewElf returned error: %s", err)
+		t.Fatal(err)
 	}
 
 	if e.Processor.Architecture != ArchX8664 {
 		t.Fatal("Machine type != x86-64")
 	}
-	t.Log("Processor: X86_64")
 
 	if e.Processor.Endian != LittleEndian {
 		t.Fatal("Endian != little")
 	}
-	t.Log("Endianess: little")
 
 	if e.PIE != true {
 		t.Fatal("PIE != true")
 	}
-	t.Log("PIE: " + strconv.FormatBool(e.PIE))
 
 	if e.Mitigations.NX != true {
 		t.Fatal("NX != true")
 	}
-	t.Log("NX: " + strconv.FormatBool(e.Mitigations.NX))
 
 	if e.Mitigations.Canary != false {
 		t.Fatal("Canary != false")
 	}
-	t.Log("Canary: " + strconv.FormatBool(e.Mitigations.Canary))
 }
 
 func TestELFBSS(t *testing.T) {
-	t.Logf("Testing .bss section addressing (%s)...", elfFile)
 	e, _ := NewELF(elfFile)
 	addr, err := e.BSS(4)
 	if err != nil {
-		t.Fatal("Error computing bss offset addr")
+		t.Fatal(err)
 	}
 
 	if addr != 0x4034 {
 		t.Fatal("BSS offset addr != 0x4034")
 	}
-	t.Logf(".bss+4 == 0x%08x", addr)
 }
 
 func TestELFRead(t *testing.T) {
-	t.Logf("Testing ELF vaddr reads (%s)...", elfFile)
 	e, _ := NewELF(elfFile)
-	readSize := 6
 	addr := uint64(0x2004)
 	data, err := e.Read(addr, 6)
 	if err != nil {
@@ -69,11 +57,9 @@ func TestELFRead(t *testing.T) {
 	if string(data) != "lolwut" {
 		t.Fatal("Read data does not match expected")
 	}
-	t.Logf("Read %v bytes from vaddr:0x%08x:\n%s", readSize, addr, hex.Dump(data))
 }
 
 func TestELFGetSignatureVAddrs(t *testing.T) {
-	t.Logf("Testing ELF binary signature search")
 	e, _ := NewELF(elfFile)
 	vaddrs, err := e.GetSignatureVAddrs([]byte("lolwut"))
 	if err != nil {
@@ -110,8 +96,7 @@ func TestRead8(t *testing.T) {
 	}
 }
 
-func TestRead16(t *testing.T) {
-	t.Logf("Testing 16-bit integer reads (%s)...", elfFile)
+func TestRead16LE(t *testing.T) {
 	e, _ := NewELF(elfFile)
 	i16, err := e.Read16LE(0x2c4)
 	if err != nil {
@@ -121,8 +106,11 @@ func TestRead16(t *testing.T) {
 	if i16 != 0x0004 {
 		t.Fatal("Little endian uint16 != 0x0004")
 	}
+}
 
-	i16, err = e.Read16BE(0x2c4)
+func TestRead16BE(t *testing.T) {
+	e, _ := NewELF(elfFile)
+	i16, err := e.Read16BE(0x2c4)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,8 +120,7 @@ func TestRead16(t *testing.T) {
 	}
 }
 
-func TestRead32(t *testing.T) {
-	t.Logf("Testing 32-bit integer reads (%s)...", elfFile)
+func TestRead32LE(t *testing.T) {
 	e, _ := NewELF(elfFile)
 	i32, err := e.Read32LE(0x2d0)
 	if err != nil {
@@ -144,7 +131,11 @@ func TestRead32(t *testing.T) {
 		t.Fatal("Little endian uint32 != 0x00554e47")
 	}
 
-	i32, err = e.Read32BE(0x2d0)
+}
+
+func TestRead32BE(t *testing.T) {
+	e, _ := NewELF(elfFile)
+	i32, err := e.Read32BE(0x2d0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,8 +145,7 @@ func TestRead32(t *testing.T) {
 	}
 }
 
-func TestRead64(t *testing.T) {
-	t.Logf("Testing 64-bit integer reads (%s)...", elfFile)
+func TestRead64LE(t *testing.T) {
 	e, _ := NewELF(elfFile)
 	i64, err := e.Read64LE(0x2f0)
 	if err != nil {
@@ -165,8 +155,11 @@ func TestRead64(t *testing.T) {
 	if i64 != 0x3e95a14400554e47 {
 		t.Fatal("Little endian uint64 != 0x3e95a14400554e47")
 	}
+}
 
-	i64, err = e.Read64BE(0x2f0)
+func TestRead64BE(t *testing.T) {
+	e, _ := NewELF(elfFile)
+	i64, err := e.Read64BE(0x2f0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,7 +170,6 @@ func TestRead64(t *testing.T) {
 }
 
 func TestELFSave(t *testing.T) {
-	t.Log("Testing ELF save/export...")
 	filePath := "/tmp/test_save"
 	e, _ := NewELF(elfFile)
 	err := e.Save(filePath, 0777)
@@ -188,7 +180,6 @@ func TestELFSave(t *testing.T) {
 }
 
 func TestELFWrite(t *testing.T) {
-	t.Log("Testing ELF raw patch...")
 	e1, _ := NewELF(elfFile)
 	e1.Write([]byte{0x41, 0x41, 0x41, 0x41}, 0x2f0)
 	e1.Write8(0x42, 0x2f4)
@@ -221,7 +212,6 @@ func TestELFWrite(t *testing.T) {
 }
 
 func TestELFAsmPatch(t *testing.T) {
-	t.Log("Testing ELF assembly patch...")
 	e1, _ := NewELF(elfFile)
 	err := e1.AsmPatch("nop\nnop\nnop\nnop\n", 0x1135)
 	if err != nil {

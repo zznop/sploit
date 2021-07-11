@@ -1,12 +1,12 @@
 package sploit
 
 import (
-	"encoding/hex"
+	"bytes"
+	"os"
 	"testing"
 )
 
 func TestDisasm(t *testing.T) {
-	t.Logf("Testing disassembly (%s)...", elfFile)
 	addr := uint64(0x1135)
 	n := 32
 	e, _ := NewELF(elfFile)
@@ -27,28 +27,27 @@ func TestDisasm(t *testing.T) {
 	if disasm != expected {
 		t.Fatal("Disassembly does not match expected")
 	}
-	t.Logf("Successfully disassembled %v bytes at vaddr:0x%08x:", n, addr)
-	t.Log("\n" + disasm)
 }
 
 func TestAsmX8664(t *testing.T) {
 	code := "mov rdi, 1337\nmov rsi, 1337\nmov rdx, 1337\nmov rcx, 1337\nnop\n"
-	t.Logf("Testing assembly of following x86-64 instructions:\n%s", code)
 	processor := &Processor{
 		Architecture: ArchX8664,
 		Endian:       LittleEndian,
 	}
 
-	opcodes, err := Asm(processor, code)
+	opcode, err := Asm(processor, code)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Logf("Assembly code compiled to %v bytes:\n%s", len(opcodes), hex.Dump(opcodes))
+	expected := []byte{0x48, 0xc7, 0xc7, 0x39, 0x05, 0x00, 0x00, 0x48, 0xc7, 0xc6, 0x39, 0x05, 0x00, 0x00, 0x48, 0xc7, 0xc2, 0x39, 0x05, 0x00, 0x00, 0x48, 0xc7, 0xc1, 0x39, 0x05, 0x00, 0x00, 0x90}
+	if bytes.Compare(opcode, expected) != 0 {
+		t.Fatal("Opcode bytes does not match expected")
+	}
 }
 
 func TestMakeELF(t *testing.T) {
-	t.Log("Testing MakeELF ...")
 	code := `
 jmp past
 
@@ -76,6 +75,7 @@ past:
 	}
 
 	err := MakeELF(processor, code, "/tmp/test.elf")
+	defer os.Remove("/tmp/test.elf")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,16 +83,18 @@ past:
 
 func TestAsmARM(t *testing.T) {
 	code := "mov r2, r1\nmov r3, r4\nmov r5, r6\n"
-	t.Logf("Testing assembly of following ARM instructions:\n%s", code)
 	processor := &Processor{
 		Architecture: ArchARM,
 		Endian:       LittleEndian,
 	}
 
-	opcodes, err := Asm(processor, code)
+	opcode, err := Asm(processor, code)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Logf("Assembly code compiled to %v bytes:\n%s", len(opcodes), hex.Dump(opcodes))
+	expected := []byte{0x01, 0x20, 0xa0, 0xe1, 0x04, 0x30, 0xa0, 0xe1, 0x06, 0x50, 0xa0, 0xe1}
+	if bytes.Compare(opcode, expected) != 0 {
+		t.Fatal("Opcode bytes does not match expected")
+	}
 }
