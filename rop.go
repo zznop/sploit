@@ -97,9 +97,17 @@ func scanForGadgets(processor *Processor, data []byte, address uint64, maxOpcode
 }
 
 func filterGadgetsIntel(gadgets []*Gadget) []*Gadget {
+	suffixes := []string{"ret", "retf", "int 0x80", "syscall", "sysenter"}
 	filtered := []*Gadget{}
 	for i := 0; i < len(gadgets); i++ {
-		if !strings.HasSuffix(strings.TrimSpace(gadgets[i].Instrs), "ret") || strings.Count(gadgets[i].Instrs, "ret") > 1 {
+		hasSuffix := false
+		for j := 0; j < len(suffixes); j++ {
+			if strings.HasSuffix(strings.TrimSpace(gadgets[i].Instrs), suffixes[j]) {
+				hasSuffix = true
+			}
+		}
+
+		if !hasSuffix || strings.Count(gadgets[i].Instrs, "ret") > 1 {
 			continue
 		}
 
