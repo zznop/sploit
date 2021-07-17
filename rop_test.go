@@ -22,8 +22,8 @@ func TestROPInstrSearchX8664(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(gadgets) != 63 {
-		t.Fatal("Number of gadgets for wildcard match != 63")
+	if len(gadgets) != 72 {
+		t.Fatal("Number of gadgets for wildcard match != 72")
 	}
 
 	gadgets, err = r.InstrSearch("add rsp, 8 ; pop rbx ; pop rbp ; pop r12 ; pop r13 ; pop r14 ; pop r15 ; ret")

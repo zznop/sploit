@@ -49,43 +49,24 @@ func (r *ROP) InstrSearch(regex string) (ROP, error) {
 	return matchGadgets, nil
 }
 
-func disasmInstrsFromRetIntel(processor *Processor, data []byte, index int, address uint64) ([]*Gadget, error) {
-	stop := index - 15
-	if stop < 0 {
-		stop = 0
-	}
-
-	gadgets := []*Gadget{}
-	for i := index - 1; i > stop; i-- {
-		instr, err := disasmGadget(address+uint64(i), data[i:index+1], processor)
-		if err != nil {
+func filterGadgetsIntel(gadgets []*Gadget) []*Gadget {
+	filtered := []*Gadget{}
+	for i := 0; i < len(gadgets); i++ {
+		if !strings.HasSuffix(strings.TrimSpace(gadgets[i].Instrs), "ret") || strings.Count(gadgets[i].Instrs, "ret") > 1 {
 			continue
 		}
 
-		if strings.Contains(instr, "leave") ||
-			!strings.HasSuffix(strings.TrimSpace(instr), "ret") ||
-			strings.Count(instr, "ret") > 1 {
-			continue
-		}
-
-		gadgets = append(
-			gadgets,
-			&Gadget{
-				Address: address + uint64(i),
-				Instrs:  instr,
-				Opcode:  data[i : index+1],
-			},
-		)
+		filtered = append(filtered, gadgets[i])
 	}
 
-	return gadgets, nil
+	return filtered
 }
 
 func findGadgetsIntel(processor *Processor, data []byte, address uint64) ([]*Gadget, error) {
 	gadgets := []*Gadget{}
 	for i := 0; i < len(data); i++ {
 		if data[i] == 0xc3 || data[i] == 0xcb {
-			gadgetsRet, err := disasmInstrsFromRetIntel(processor, data, i, address)
+			gadgetsRet, err := disasmInstrsFromRet(processor, data, i, address, 16, 1)
 			if err != nil {
 				return nil, err
 			}
@@ -94,7 +75,7 @@ func findGadgetsIntel(processor *Processor, data []byte, address uint64) ([]*Gad
 		}
 	}
 
-	return gadgets, nil
+	return filterGadgetsIntel(gadgets), nil
 }
 
 func reverseSlice(s []byte) []byte {
@@ -105,16 +86,15 @@ func reverseSlice(s []byte) []byte {
 	return s
 }
 
-// TODO: this can be combined with the intel version
-func disasmInstrsFromRetARM(processor *Processor, data []byte, index int, address uint64) ([]*Gadget, error) {
-	stop := index - 16
+func disasmInstrsFromRet(processor *Processor, data []byte, index int, address uint64, maxOpcodes int, instrSize int) ([]*Gadget, error) {
+	stop := index - maxOpcodes
 	if stop < 0 {
 		stop = 0
 	}
 
 	gadgets := []*Gadget{}
-	for i := index - 4; i > stop; i -= 4 {
-		instr, err := disasmGadget(address+uint64(i), data[i:index+4], processor)
+	for i := index - instrSize; i > stop; i -= instrSize {
+		instr, err := disasmGadget(address+uint64(i), data[i:index+instrSize], processor)
 		if err != nil {
 			continue
 		}
@@ -124,7 +104,7 @@ func disasmInstrsFromRetARM(processor *Processor, data []byte, index int, addres
 			&Gadget{
 				Address: address + uint64(i),
 				Instrs:  instr,
-				Opcode:  data[i : index+4],
+				Opcode:  data[i : index+instrSize],
 			},
 		)
 	}
@@ -132,43 +112,48 @@ func disasmInstrsFromRetARM(processor *Processor, data []byte, index int, addres
 	return gadgets, nil
 }
 
-func findGadgetsARM(processor *Processor, data []byte, address uint64) ([]*Gadget, error) {
+func generateBranchOpcodesARM(processor *Processor) [][]byte {
 	gadgetExprs := []GadgetExpr{
 		GadgetExpr{[]byte{0xe1, 0x2f, 0xff}, 0x10, 0x1e}, // bx reg
 		GadgetExpr{[]byte{0xe1, 0x2f, 0xff}, 0x30, 0x3e}, // blx reg
 	}
 
-	var gadgets [][]byte
+	var opcodes [][]byte
 	for i := 0; i < len(gadgetExprs); i++ {
 		for j := gadgetExprs[i].RegStart; j < gadgetExprs[i].RegEnd; j++ {
-			gadget := make([]byte, len(gadgetExprs[i].Operation)+1)
-			copy(gadget, gadgetExprs[i].Operation)
-			gadget[len(gadget)-1] = byte(j)
+			opcode := make([]byte, len(gadgetExprs[i].Operation)+1)
+			copy(opcode, gadgetExprs[i].Operation)
+			opcode[len(opcode)-1] = byte(j)
 			if processor.Endian == LittleEndian {
-				gadget = reverseSlice(gadget)
+				opcode = reverseSlice(opcode)
 			}
-			gadgets = append(gadgets, gadget)
+			opcodes = append(opcodes, opcode)
 		}
 	}
 
-	fullGadgets := []*Gadget{}
+	return opcodes
+}
+
+func findGadgetsARM(processor *Processor, data []byte, address uint64) ([]*Gadget, error) {
+	branches := generateBranchOpcodesARM(processor)
+	gadgets := []*Gadget{}
 	for i := 0; i < len(data); i += 4 {
-		for j := 0; j < len(gadgets); j++ {
-			if i+len(gadgets[j]) > len(data) {
+		for j := 0; j < len(branches); j++ {
+			if i+len(branches[j]) > len(data) {
 				break
 			}
 
-			if bytes.Compare(data[i:i+len(gadgets[j])], gadgets[j]) == 0 {
-				gadgetsRet, err := disasmInstrsFromRetARM(processor, data, i, address)
+			if bytes.Compare(data[i:i+len(branches[j])], branches[j]) == 0 {
+				gadgetsRet, err := disasmInstrsFromRet(processor, data, i, address, 20, 4)
 				if err != nil {
 					return nil, err
 				}
-				fullGadgets = append(fullGadgets, gadgetsRet...)
+				gadgets = append(gadgets, gadgetsRet...)
 			}
 		}
 	}
 
-	return fullGadgets, nil
+	return gadgets, nil
 }
 
 func findGadgets(processor *Processor, data []byte, address uint64) ([]*Gadget, error) {
