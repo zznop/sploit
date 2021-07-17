@@ -49,43 +49,6 @@ func (r *ROP) InstrSearch(regex string) (ROP, error) {
 	return matchGadgets, nil
 }
 
-func filterGadgetsIntel(gadgets []*Gadget) []*Gadget {
-	filtered := []*Gadget{}
-	for i := 0; i < len(gadgets); i++ {
-		if !strings.HasSuffix(strings.TrimSpace(gadgets[i].Instrs), "ret") || strings.Count(gadgets[i].Instrs, "ret") > 1 {
-			continue
-		}
-
-		filtered = append(filtered, gadgets[i])
-	}
-
-	return filtered
-}
-
-func findGadgetsIntel(processor *Processor, data []byte, address uint64) ([]*Gadget, error) {
-	gadgets := []*Gadget{}
-	for i := 0; i < len(data); i++ {
-		if data[i] == 0xc3 || data[i] == 0xcb {
-			gadgetsRet, err := disasmInstrsFromRet(processor, data, i, address, 16, 1)
-			if err != nil {
-				return nil, err
-			}
-
-			gadgets = append(gadgets, gadgetsRet...)
-		}
-	}
-
-	return filterGadgetsIntel(gadgets), nil
-}
-
-func reverseSlice(s []byte) []byte {
-	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-		s[i], s[j] = s[j], s[i]
-	}
-
-	return s
-}
-
 func disasmInstrsFromRet(processor *Processor, data []byte, index int, address uint64, maxOpcodes int, instrSize int) ([]*Gadget, error) {
 	stop := index - maxOpcodes
 	if stop < 0 {
@@ -112,10 +75,72 @@ func disasmInstrsFromRet(processor *Processor, data []byte, index int, address u
 	return gadgets, nil
 }
 
+func scanForGadgets(processor *Processor, data []byte, address uint64, maxOpcodes int, instrSize int, branches [][]byte) ([]*Gadget, error) {
+	gadgets := []*Gadget{}
+	for i := 0; i < len(data); i += instrSize {
+		for j := 0; j < len(branches); j++ {
+			if i+len(branches[j]) > len(data) {
+				break
+			}
+
+			if bytes.Compare(data[i:i+len(branches[j])], branches[j]) == 0 {
+				gadgetsRet, err := disasmInstrsFromRet(processor, data, i, address, maxOpcodes, instrSize)
+				if err != nil {
+					return nil, err
+				}
+				gadgets = append(gadgets, gadgetsRet...)
+			}
+		}
+	}
+
+	return gadgets, nil
+}
+
+func filterGadgetsIntel(gadgets []*Gadget) []*Gadget {
+	filtered := []*Gadget{}
+	for i := 0; i < len(gadgets); i++ {
+		if !strings.HasSuffix(strings.TrimSpace(gadgets[i].Instrs), "ret") || strings.Count(gadgets[i].Instrs, "ret") > 1 {
+			continue
+		}
+
+		filtered = append(filtered, gadgets[i])
+	}
+
+	return filtered
+}
+
+func findGadgetsIntel(processor *Processor, data []byte, address uint64) ([]*Gadget, error) {
+	branches := [][]byte{
+		[]byte{0xc3},       // ret
+		[]byte{0xcb},       // retf
+		[]byte{0xcd, 0x80}, // int 0x80
+		[]byte{0x0f, 0x34}, // sysenter
+		[]byte{0x0f, 0x05}, // syscall
+	}
+
+	gadgets, err := scanForGadgets(processor, data, address, 16, 1, branches)
+	if err != nil {
+		return nil, err
+	}
+
+	return filterGadgetsIntel(gadgets), nil
+}
+
+func reverseSlice(s []byte) []byte {
+	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+		s[i], s[j] = s[j], s[i]
+	}
+
+	return s
+}
+
 func generateBranchOpcodesARM(processor *Processor) [][]byte {
 	gadgetExprs := []GadgetExpr{
 		GadgetExpr{[]byte{0xe1, 0x2f, 0xff}, 0x10, 0x1e}, // bx reg
 		GadgetExpr{[]byte{0xe1, 0x2f, 0xff}, 0x30, 0x3e}, // blx reg
+		GadgetExpr{[]byte{0xe8, 0xbd, 0x80}, 0x01, 0xff}, // pop {,pc}
+		GadgetExpr{[]byte{0xe1, 0xa0, 0xf0}, 0x00, 0x0f}, // mov pc, reg
+		GadgetExpr{[]byte{0xe8, 0xbd, 0x80}, 0x01, 0x01}, // ldm !sp, {pc}
 	}
 
 	var opcodes [][]byte
@@ -136,24 +161,7 @@ func generateBranchOpcodesARM(processor *Processor) [][]byte {
 
 func findGadgetsARM(processor *Processor, data []byte, address uint64) ([]*Gadget, error) {
 	branches := generateBranchOpcodesARM(processor)
-	gadgets := []*Gadget{}
-	for i := 0; i < len(data); i += 4 {
-		for j := 0; j < len(branches); j++ {
-			if i+len(branches[j]) > len(data) {
-				break
-			}
-
-			if bytes.Compare(data[i:i+len(branches[j])], branches[j]) == 0 {
-				gadgetsRet, err := disasmInstrsFromRet(processor, data, i, address, 20, 4)
-				if err != nil {
-					return nil, err
-				}
-				gadgets = append(gadgets, gadgetsRet...)
-			}
-		}
-	}
-
-	return gadgets, nil
+	return scanForGadgets(processor, data, address, 20, 4, branches)
 }
 
 func findGadgets(processor *Processor, data []byte, address uint64) ([]*Gadget, error) {
@@ -167,6 +175,6 @@ func findGadgets(processor *Processor, data []byte, address uint64) ([]*Gadget, 
 	case ArchARM:
 		return findGadgetsARM(processor, data, address)
 	default:
-		return nil, errors.New("ROP interface currently only supports Intel and ARM binaries")
+		return nil, errors.New("ROP interface currently only supports Intel and ARM32 binaries")
 	}
 }
